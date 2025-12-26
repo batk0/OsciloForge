@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Waveform Editor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Waveform Editor</h1>
+  <div class="controls">
+    <button id="open-btn">Open CSV</button>
+    <button id="save-btn">Save CSV</button>
+    <button id="reset-btn">Reset</button>
+    <div class="draw-style-controls">
+        <label>Draw Style:</label>
+        <input type="radio" id="draw-style-line" name="draw-style" value="line" checked>
+        <label for="draw-style-line">Line</label>
+        <input type="radio" id="draw-style-dots" name="draw-style" value="dots">
+        <label for="draw-style-dots">Dots</label>
+    </div>
+  </div>
+  <div class="zoom-controls">
+    <div class="zoom-control">
+        <label for="h-zoom">Horizontal Zoom</label>
+        <input type="range" id="h-zoom" min="0.1" max="10" value="1" step="0.1">
+    </div>
+    <div class="zoom-control">
+        <label for="v-zoom">Vertical Zoom</label>
+        <input type="range" id="v-zoom" min="1" max="10" value="1" step="0.1">
+    </div>
+  </div>
+  <div class="canvas-container">
+      <canvas id="waveform-canvas"></canvas>
+  </div>
+  <script src="./renderer.js"></script>
+</body>
+</html>
