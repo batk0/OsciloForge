@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const WAVEFORM_POINTS = 4096;
     const CANVAS_HEIGHT = 400;
-    const initialWaveformData = new Float32Array(WAVEFORM_POINTS).fill(0.5);
+    const initialWaveformData = new Float32Array(WAVEFORM_POINTS).fill(0.0);
     let lastLoadedWaveformData = new Float32Array(initialWaveformData);
     let waveformData = new Float32Array(initialWaveformData);
 
@@ -42,9 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.lineWidth = 1.5; // Make it a bit thicker
             ctx.beginPath();
             for (let i = 0; i < WAVEFORM_POINTS; i++) {
-                // Use the center of the pixel for x coordinate
                 const x = (i + 0.5) * hZoom;
-                const y = vCenter - (waveformData[i] - 0.5) * vScale;
+                const y = vCenter - (waveformData[i]) * vScale;
                 
                 if (i === 0) {
                     ctx.moveTo(x, y);
@@ -57,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillStyle = '#007bff';
             for (let i = 0; i < WAVEFORM_POINTS; i++) {
                 const x = (i + 0.5) * hZoom;
-                const y = vCenter - (waveformData[i] - 0.5) * vScale;
+                const y = vCenter - (waveformData[i]) * vScale;
                 ctx.fillRect(x - 1, y - 1, 2, 2); // Draw a 2x2 dot
             }
         }
@@ -82,8 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentPointX >= 0 && currentPointX < WAVEFORM_POINTS) {
             const vCenter = CANVAS_HEIGHT / 2;
             const vScale = (CANVAS_HEIGHT / 2) * vZoom;
-            let value = (vCenter - mousePos.y) / vScale + 0.5;
-            value = Math.max(0, Math.min(1, value)); // Clamp
+            let value = (vCenter - mousePos.y) / vScale;
+            value = Math.max(-1.0, Math.min(1.0, value)); // Clamp
 
             // Interpolate between the last point and the current point to draw a smooth line
             if (lastPoint.x !== -1 && lastPoint.x !== currentPointX) {
@@ -160,7 +159,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const finalData = new Float32Array(WAVEFORM_POINTS); // Inits with 0.0
 
                 // Copy the loaded data, truncating or padding as necessary.
-                finalData.set(numericData.slice(0, WAVEFORM_POINTS));
+                const clampedData = numericData.slice(0, WAVEFORM_POINTS).map(val => Math.max(-1.0, Math.min(1.0, val)));
+                finalData.set(clampedData);
 
                 waveformData = finalData;
                 lastLoadedWaveformData = new Float32Array(finalData);

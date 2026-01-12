@@ -1,5 +1,4 @@
-node_modules/
-i-love-you.csv
-.DS_Store
-GEMINI.md
-Screenshot*.png
+*.arb
+*.csv
+
+node_modules
