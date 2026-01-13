@@ -16,41 +16,41 @@
 
     <div class="toolbar-group">
       <label>Edit Mode:</label>
-      <input type="radio" id="edit-mode-freehand" name="edit-mode" value="freehand" checked>
+      <input type="radio" id="edit-mode-freehand" name="edit-mode" value="freehand" checked title="Freehand Drawing">
       <label for="edit-mode-freehand">Freehand</label>
-      <input type="radio" id="edit-mode-line" name="edit-mode" value="line">
+      <input type="radio" id="edit-mode-line" name="edit-mode" value="line" title="Line Drawing">
       <label for="edit-mode-line">Line</label>
     </div>
     
     <div class="toolbar-group">
       <label>Wave Gen:</label>
-      <select id="waveform-type">
+      <select id="waveform-type" title="Select Waveform Type">
           <option value="sine">Sine</option>
           <option value="square">Square</option>
           <option value="triangle">Triangle</option>
       </select>
       <label for="amplitude">Amp:</label>
-      <input type="number" id="amplitude" value="1.0" step="0.1" min="0" max="1.0">
+      <input type="number" id="amplitude" value="1.0" step="0.1" min="0" max="1.0" title="Waveform Amplitude (between -1.0 and 1.0)">
       <label for="cycles">Cyc:</label>
-      <input type="number" id="cycles" value="1" step="1" min="1">
+      <input type="number" id="cycles" value="1" step="1" min="1" title="Number of Cycles">
       <label for="duty-cycle">Duty:</label>
-      <input type="number" id="duty-cycle" value="50" step="1" min="0" max="100">
+      <input type="number" id="duty-cycle" value="50" step="1" min="0" max="100" title="Duty Cycle for Square Waves (0-100%)">
       <button id="generate-waveform-btn" title="Generate">✨</button>
     </div>
 
     <div class="toolbar-group">
       <label>View:</label>
-      <input type="radio" id="draw-style-line" name="draw-style" value="line" checked>
+      <input type="radio" id="draw-style-line" name="draw-style" value="line" checked title="Draw Waveform as Line">
       <label for="draw-style-line">Line</label>
-      <input type="radio" id="draw-style-dots" name="draw-style" value="dots">
+      <input type="radio" id="draw-style-dots" name="draw-style" value="dots" title="Draw Waveform as Dots">
       <label for="draw-style-dots">Dots</label>
     </div>
 
     <div class="toolbar-group">
       <label for="h-zoom">H-Zoom:</label>
-      <input type="range" id="h-zoom" min="0.1" max="10" value="1" step="0.1">
+      <input type="range" id="h-zoom" min="0.1" max="10" value="1" step="0.1" title="Adjust Horizontal Zoom">
       <label for="v-zoom">V-Zoom:</label>
-      <input type="range" id="v-zoom" min="1" max="10" value="1" step="0.1">
+      <input type="range" id="v-zoom" min="1" max="10" value="1" step="0.1" title="Adjust Vertical Zoom">
     </div>
   </div>
 

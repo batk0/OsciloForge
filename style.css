@@ -79,8 +79,11 @@ input[type="number"] {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 0; /* Add this to help flexbox resizing */
 }
 
 #waveform-canvas {
   background-color: #000;
+  width: 100%;
+  height: 100%;
 }

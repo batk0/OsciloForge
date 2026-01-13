@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const downloadDeviceBtn = document.getElementById('download-device-btn');
 
     const WAVEFORM_POINTS = 4096;
-    const CANVAS_HEIGHT = 400;
+    const AXIS_PADDING = 50; // Space for axis labels
     const initialWaveformData = new Float32Array(WAVEFORM_POINTS).fill(0.0);
     let lastLoadedWaveformData = new Float32Array(initialWaveformData);
     let waveformData = new Float32Array(initialWaveformData);
@@ -34,69 +34,134 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Canvas and Drawing ---
 
     function setupCanvas() {
-        canvas.height = CANVAS_HEIGHT;
+        // The canvas size is now controlled by CSS.
+        // We add a resize listener to handle initial sizing and subsequent resizes.
+        window.addEventListener('resize', draw);
+        // Initial draw
         draw();
     }
 
     function draw() {
-        const canvasWidth = WAVEFORM_POINTS * hZoom;
-        canvas.width = canvasWidth; // This also clears the canvas
+        // Match the drawing buffer to the displayed size
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
 
-        const vCenter = CANVAS_HEIGHT / 2;
-        const vScale = (CANVAS_HEIGHT / 2) * vZoom;
+        if (canvas.width <= AXIS_PADDING || canvas.height <= AXIS_PADDING) {
+            return; // Don't draw if we have no space
+        }
 
-        // Draw grid
-        drawGrid();
+        const chartWidth = canvas.width - AXIS_PADDING;
+        const chartHeight = canvas.height - AXIS_PADDING;
+
+        const vCenter = chartHeight / 2;
+        const vScale = (chartHeight / 2) * vZoom;
+        const xScale = (chartWidth / WAVEFORM_POINTS) * hZoom;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        drawAxesAndGrid(chartWidth, chartHeight);
+        
+        ctx.save();
+        ctx.translate(AXIS_PADDING, 0);
 
         if (drawStyle === 'line') {
-            ctx.strokeStyle = '#ff0000'; // Red color for waveform
+            ctx.strokeStyle = '#ff0000'; // Red
             ctx.lineWidth = 1.5;
             ctx.beginPath();
             for (let i = 0; i < WAVEFORM_POINTS; i++) {
-                const x = (i + 0.5) * hZoom;
-                const y = vCenter - (waveformData[i]) * vScale;
-                
-                if (i === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
+                const x = i * xScale;
+                const y = vCenter - (waveformData[i] * vScale);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
             }
             ctx.stroke();
         } else if (drawStyle === 'dots') {
-            ctx.fillStyle = '#ff0000'; // Red color for waveform
+            ctx.fillStyle = '#ff0000'; // Red
             for (let i = 0; i < WAVEFORM_POINTS; i++) {
-                const x = (i + 0.5) * hZoom;
-                const y = vCenter - (waveformData[i]) * vScale;
-                ctx.fillRect(x - 1, y - 1, 2, 2); // Draw a 2x2 dot
+                const x = i * xScale;
+                const y = vCenter - (waveformData[i] * vScale);
+                ctx.fillRect(x - 1, y - 1, 2, 2);
             }
         }
+        ctx.restore();
     }
 
-    function drawGrid() {
-        const gridColor = '#444'; // Subtle gray for grid lines
-        const numDivisionsX = 20;
-        const numDivisionsY = 10;
+    function drawAxesAndGrid(chartWidth, chartHeight) {
+        const axisColor = '#f0f0f0';
+        const gridColor = '#444';
+        const textColor = '#f0f0f0';
+        
+        ctx.font = '12px sans-serif';
+        
+        // --- Y-Axis and Horizontal Grid ---
+        const yTickCount = 11; // 100%, 80%, ..., -100%
+        ctx.strokeStyle = axisColor;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(AXIS_PADDING, 0); // Left edge of chart area
+        ctx.lineTo(AXIS_PADDING, chartHeight);
+        ctx.stroke();
 
-        ctx.strokeStyle = gridColor;
-        ctx.lineWidth = 0.5;
+        for (let i = 0; i < yTickCount; i++) {
+            const y = (i / (yTickCount - 1)) * chartHeight;
+            const percentage = 100 - (i * (200 / (yTickCount - 1))); // From 100 down to -100
 
-        // Draw vertical lines
-        const xStep = canvas.width / numDivisionsX;
-        for (let i = 1; i < numDivisionsX; i++) {
+            // Draw Tick
             ctx.beginPath();
-            ctx.moveTo(i * xStep, 0);
-            ctx.lineTo(i * xStep, canvas.height);
+            ctx.moveTo(AXIS_PADDING - 5, y);
+            ctx.lineTo(AXIS_PADDING, y);
             ctx.stroke();
+
+            // Draw Grid Line and Label for major ticks
+            if (i % 2 === 0) { // Major ticks every 2nd (e.g., 100, 60, 20, -20, -60, -100)
+                ctx.strokeStyle = gridColor;
+                ctx.beginPath();
+                ctx.moveTo(AXIS_PADDING, y);
+                ctx.lineTo(canvas.width, y); // Span full canvas width
+                ctx.stroke();
+                
+                ctx.fillStyle = textColor;
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`${percentage}%`, AXIS_PADDING - 10, y);
+            }
+            ctx.strokeStyle = axisColor; // Reset for minor ticks
         }
+        
+        // --- X-Axis and Vertical Grid ---
+        const xScale = (chartWidth / WAVEFORM_POINTS) * hZoom; // Using the responsive xScale
+        const xTickCount = 11; // For 0 to 4095
+        
+        ctx.strokeStyle = axisColor;
+        ctx.beginPath();
+        ctx.moveTo(AXIS_PADDING, chartHeight / 2); // X-axis at vertical center
+        ctx.lineTo(canvas.width, chartHeight / 2);
+        ctx.stroke();
 
-        // Draw horizontal lines
-        const yStep = canvas.height / numDivisionsY;
-        for (let i = 1; i < numDivisionsY; i++) {
+        for (let i = 0; i < xTickCount; i++) {
+            const x = AXIS_PADDING + (i / (xTickCount - 1)) * chartWidth; // Position relative to chartWidth
+            const pointValue = Math.round((i / (xTickCount - 1)) * (WAVEFORM_POINTS - 1));
+
+            // Draw Tick
             ctx.beginPath();
-            ctx.moveTo(0, i * yStep);
-            ctx.lineTo(canvas.width, i * yStep);
+            ctx.moveTo(x, chartHeight / 2); // Start at central X-axis
+            ctx.lineTo(x, chartHeight / 2 + 5); // Extend downwards
             ctx.stroke();
+
+            // Draw Grid Line and Label for major ticks
+            if (i % 2 === 0) { // Major ticks every 2nd (e.g., 0, 819, 1638, ...)
+                ctx.strokeStyle = gridColor;
+                ctx.beginPath();
+                ctx.moveTo(x, 0); // Span full height
+                ctx.lineTo(x, chartHeight);
+                ctx.stroke();
+
+                ctx.fillStyle = textColor;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.fillText(pointValue, x, chartHeight / 2 + 10); // Label below central X-axis
+            }
+            ctx.strokeStyle = axisColor; // Reset for minor ticks
         }
     }
 
@@ -139,26 +204,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleFreehandDraw(event) {
         if (!isDrawing) return;
-
+        
+        const chartWidth = canvas.width - AXIS_PADDING;
+        const chartHeight = canvas.height - AXIS_PADDING;
+        const xScale = (chartWidth / WAVEFORM_POINTS) * hZoom;
         const mousePos = getMousePos(event);
-        const currentPointX = Math.floor(mousePos.x / hZoom);
+        const currentPointX = Math.floor((mousePos.x - AXIS_PADDING) / xScale);
 
         if (currentPointX >= 0 && currentPointX < WAVEFORM_POINTS) {
-            const vCenter = CANVAS_HEIGHT / 2;
-            const vScale = (CANVAS_HEIGHT / 2) * vZoom;
+            const vCenter = chartHeight / 2;
+            const vScale = (chartHeight / 2) * vZoom;
             let value = (vCenter - mousePos.y) / vScale;
-            value = Math.max(-1.0, Math.min(1.0, value)); // Clamp
+            value = Math.max(-1.0, Math.min(1.0, value));
 
-            // Interpolate between the last point and the current point to draw a smooth line
             if (lastPoint.x !== -1 && lastPoint.x !== currentPointX) {
                 const startX = Math.min(lastPoint.x, currentPointX);
                 const endX = Math.max(lastPoint.x, currentPointX);
                 const startY = (lastPoint.x < currentPointX) ? lastPoint.y : value;
                 const endY = (lastPoint.x < currentPointX) ? value : lastPoint.y;
-
                 for (let i = startX; i <= endX; i++) {
-                    const t = (endX - startX === 0) ? 1.0 : (i - startX) / (endX - startX);
-                    waveformData[i] = startY + t * (endY - startY);
+                    if (i < waveformData.length) {
+                       const t = (endX - startX === 0) ? 1.0 : (i - startX) / (endX - startX);
+                       waveformData[i] = startY + t * (endY - startY);
+                    }
                 }
             } else {
                 waveformData[currentPointX] = value;
@@ -170,31 +238,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleLineDraw(event) {
+        const chartWidth = canvas.width - AXIS_PADDING;
+        const chartHeight = canvas.height - AXIS_PADDING;
+        const xScale = (chartWidth / WAVEFORM_POINTS) * hZoom;
         const mousePos = getMousePos(event);
-        const currentPointX = Math.floor(mousePos.x / hZoom);
+        const currentPointX = Math.floor((mousePos.x - AXIS_PADDING) / xScale);
 
         if (currentPointX >= 0 && currentPointX < WAVEFORM_POINTS) {
-            const vCenter = CANVAS_HEIGHT / 2;
-            const vScale = (CANVAS_HEIGHT / 2) * vZoom;
+            const vCenter = chartHeight / 2;
+            const vScale = (chartHeight / 2) * vZoom;
             let value = (vCenter - mousePos.y) / vScale;
-            value = Math.max(-1.0, Math.min(1.0, value)); // Clamp
+            value = Math.max(-1.0, Math.min(1.0, value));
 
             if (!lineStartPoint) {
-                // First click, set start point
                 lineStartPoint = { x: currentPointX, y: value };
             } else {
-                // Second click, draw line
                 const startX = Math.min(lineStartPoint.x, currentPointX);
                 const endX = Math.max(lineStartPoint.x, currentPointX);
                 const startY_val = (lineStartPoint.x < currentPointX) ? lineStartPoint.y : value;
                 const endY_val = (lineStartPoint.x < currentPointX) ? value : lineStartPoint.y;
-
                 for (let i = startX; i <= endX; i++) {
-                    const t = (endX - startX === 0) ? 1.0 : (i - startX) / (endX - startX);
-                    waveformData[i] = startY_val + t * (endY_val - startY_val);
+                    if (i < waveformData.length) {
+                        const t = (endX - startX === 0) ? 1.0 : (i - startX) / (endX - startX);
+                        waveformData[i] = startY_val + t * (endY_val - startY_val);
+                    }
                 }
-                // The new end point becomes the start of the next line
-                lineStartPoint = { x: currentPointX, y: value }; 
+                lineStartPoint = { x: currentPointX, y: value };
                 draw();
             }
         }
