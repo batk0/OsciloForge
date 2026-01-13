@@ -9,6 +9,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const vZoomSlider = document.getElementById('v-zoom');
     const drawStyleLine = document.getElementById('draw-style-line');
     const drawStyleDots = document.getElementById('draw-style-dots');
+    const waveformTypeSelect = document.getElementById('waveform-type');
+    const amplitudeInput = document.getElementById('amplitude');
+    const cyclesInput = document.getElementById('cycles');
+    const dutyCycleInput = document.getElementById('duty-cycle');
+    const generateWaveformBtn = document.getElementById('generate-waveform-btn');
+    const downloadDeviceBtn = document.getElementById('download-device-btn');
 
     const WAVEFORM_POINTS = 4096;
     const CANVAS_HEIGHT = 400;
@@ -22,6 +28,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let isDrawing = false;
     let lastPoint = { x: -1, y: -1 };
+    let editMode = document.querySelector('input[name="edit-mode"]:checked').value;
+    let lineStartPoint = null; // For line drawing mode
 
     // --- Canvas and Drawing ---
 
@@ -37,9 +45,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const vCenter = CANVAS_HEIGHT / 2;
         const vScale = (CANVAS_HEIGHT / 2) * vZoom;
 
+        // Draw grid
+        drawGrid();
+
         if (drawStyle === 'line') {
-            ctx.strokeStyle = '#007bff';
-            ctx.lineWidth = 1.5; // Make it a bit thicker
+            ctx.strokeStyle = '#ff0000'; // Red color for waveform
+            ctx.lineWidth = 1.5;
             ctx.beginPath();
             for (let i = 0; i < WAVEFORM_POINTS; i++) {
                 const x = (i + 0.5) * hZoom;
@@ -53,11 +64,65 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             ctx.stroke();
         } else if (drawStyle === 'dots') {
-            ctx.fillStyle = '#007bff';
+            ctx.fillStyle = '#ff0000'; // Red color for waveform
             for (let i = 0; i < WAVEFORM_POINTS; i++) {
                 const x = (i + 0.5) * hZoom;
                 const y = vCenter - (waveformData[i]) * vScale;
                 ctx.fillRect(x - 1, y - 1, 2, 2); // Draw a 2x2 dot
+            }
+        }
+    }
+
+    function drawGrid() {
+        const gridColor = '#444'; // Subtle gray for grid lines
+        const numDivisionsX = 20;
+        const numDivisionsY = 10;
+
+        ctx.strokeStyle = gridColor;
+        ctx.lineWidth = 0.5;
+
+        // Draw vertical lines
+        const xStep = canvas.width / numDivisionsX;
+        for (let i = 1; i < numDivisionsX; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * xStep, 0);
+            ctx.lineTo(i * xStep, canvas.height);
+            ctx.stroke();
+        }
+
+        // Draw horizontal lines
+        const yStep = canvas.height / numDivisionsY;
+        for (let i = 1; i < numDivisionsY; i++) {
+            ctx.beginPath();
+            ctx.moveTo(0, i * yStep);
+            ctx.lineTo(canvas.width, i * yStep);
+            ctx.stroke();
+        }
+    }
+
+    function generateSineWave(amplitude, cycles) {
+        for (let i = 0; i < WAVEFORM_POINTS; i++) {
+            waveformData[i] = amplitude * Math.sin(2 * Math.PI * cycles * (i / WAVEFORM_POINTS));
+        }
+    }
+
+    function generateSquareWave(amplitude, cycles, dutyCycle) {
+        const periodPoints = WAVEFORM_POINTS / cycles;
+        const dutyPoints = periodPoints * (dutyCycle / 100);
+        for (let i = 0; i < WAVEFORM_POINTS; i++) {
+            const phaseInPeriod = i % periodPoints;
+            waveformData[i] = phaseInPeriod < dutyPoints ? amplitude : -amplitude;
+        }
+    }
+
+    function generateTriangleWave(amplitude, cycles) {
+        const periodPoints = WAVEFORM_POINTS / cycles;
+        for (let i = 0; i < WAVEFORM_POINTS; i++) {
+            const phaseInPeriod = i % periodPoints;
+            if (phaseInPeriod < periodPoints / 2) {
+                waveformData[i] = amplitude * (2 * (phaseInPeriod / (periodPoints / 2)) - 1);
+            } else {
+                waveformData[i] = amplitude * (1 - 2 * ((phaseInPeriod - periodPoints / 2) / (periodPoints / 2)));
             }
         }
     }
@@ -72,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function handleDraw(event) {
+    function handleFreehandDraw(event) {
         if (!isDrawing) return;
 
         const mousePos = getMousePos(event);
@@ -104,23 +169,73 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function handleLineDraw(event) {
+        const mousePos = getMousePos(event);
+        const currentPointX = Math.floor(mousePos.x / hZoom);
+
+        if (currentPointX >= 0 && currentPointX < WAVEFORM_POINTS) {
+            const vCenter = CANVAS_HEIGHT / 2;
+            const vScale = (CANVAS_HEIGHT / 2) * vZoom;
+            let value = (vCenter - mousePos.y) / vScale;
+            value = Math.max(-1.0, Math.min(1.0, value)); // Clamp
+
+            if (!lineStartPoint) {
+                // First click, set start point
+                lineStartPoint = { x: currentPointX, y: value };
+            } else {
+                // Second click, draw line
+                const startX = Math.min(lineStartPoint.x, currentPointX);
+                const endX = Math.max(lineStartPoint.x, currentPointX);
+                const startY_val = (lineStartPoint.x < currentPointX) ? lineStartPoint.y : value;
+                const endY_val = (lineStartPoint.x < currentPointX) ? value : lineStartPoint.y;
+
+                for (let i = startX; i <= endX; i++) {
+                    const t = (endX - startX === 0) ? 1.0 : (i - startX) / (endX - startX);
+                    waveformData[i] = startY_val + t * (endY_val - startY_val);
+                }
+                // The new end point becomes the start of the next line
+                lineStartPoint = { x: currentPointX, y: value }; 
+                draw();
+            }
+        }
+    }
+
     canvas.addEventListener('mousedown', (e) => {
-        isDrawing = true;
-        // The rest is handled by handleDraw on mousemove, but we call it once to draw a single dot on click
-        handleDraw(e); 
+        if (editMode === 'freehand') {
+            isDrawing = true;
+            handleFreehandDraw(e); 
+        } else if (editMode === 'line') {
+            handleLineDraw(e); // handleLineDraw manages its own state
+        }
     });
 
     canvas.addEventListener('mouseup', () => {
-        isDrawing = false;
-        lastPoint = { x: -1, y: -1 };
+        if (editMode === 'freehand') {
+            isDrawing = false;
+            lastPoint = { x: -1, y: -1 };
+        }
     });
 
     canvas.addEventListener('mouseleave', () => {
-        isDrawing = false;
-        lastPoint = { x: -1, y: -1 };
+        if (editMode === 'freehand') {
+            isDrawing = false;
+            lastPoint = { x: -1, y: -1 };
+        }
     });
 
-    canvas.addEventListener('mousemove', handleDraw);
+    canvas.addEventListener('mousemove', (e) => {
+        if (editMode === 'freehand') {
+            handleFreehandDraw(e);
+        }
+        // Line drawing doesn't need mousemove for drawing itself, only for visual feedback if implemented.
+    });
+
+    canvas.addEventListener('contextmenu', (e) => {
+        if (editMode === 'line') {
+            e.preventDefault(); // Prevent the browser's context menu
+            lineStartPoint = null; // Clear the starting point
+        }
+    });
 
     // --- Event Listeners ---
 
@@ -142,6 +257,15 @@ document.addEventListener('DOMContentLoaded', () => {
     drawStyleDots.addEventListener('change', () => {
         drawStyle = 'dots';
         draw();
+    });
+
+    document.querySelectorAll('input[name="edit-mode"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            editMode = e.target.value;
+            lineStartPoint = null; // Reset line drawing on mode change
+            isDrawing = false; // Stop any ongoing drawing
+            lastPoint = { x: -1, y: -1 }; // Reset last point
+        });
     });
 
     openBtn.addEventListener('click', async () => {
@@ -177,6 +301,48 @@ document.addEventListener('DOMContentLoaded', () => {
     resetBtn.addEventListener('click', () => {
         waveformData = new Float32Array(lastLoadedWaveformData);
         draw();
+    });
+
+    generateWaveformBtn.addEventListener('click', () => {
+        const type = waveformTypeSelect.value;
+        const amplitude = parseFloat(amplitudeInput.value);
+        const cycles = parseInt(cyclesInput.value);
+        const dutyCycle = parseInt(dutyCycleInput.value);
+
+        // Input validation
+        if (isNaN(amplitude) || amplitude < 0 || amplitude > 1) {
+            alert('Amplitude must be between 0 and 1.');
+            return;
+        }
+        if (isNaN(cycles) || cycles < 1) {
+            alert('Cycles must be a positive integer.');
+            return;
+        }
+        if (type === 'square' && (isNaN(dutyCycle) || dutyCycle < 0 || dutyCycle > 100)) {
+            alert('Duty Cycle must be between 0 and 100 for Square waves.');
+            return;
+        }
+
+        switch (type) {
+            case 'sine':
+                generateSineWave(amplitude, cycles);
+                break;
+            case 'square':
+                generateSquareWave(amplitude, cycles, dutyCycle);
+                break;
+            case 'triangle':
+                generateTriangleWave(amplitude, cycles);
+                break;
+            default:
+                console.error('Unknown waveform type:', type);
+                return;
+        }
+        lastLoadedWaveformData = new Float32Array(waveformData); // Update last loaded for reset
+        draw();
+    });
+
+    downloadDeviceBtn.addEventListener('click', () => {
+        alert('Downloading to device is not yet implemented.');
     });
 
     // --- Initial Setup ---
