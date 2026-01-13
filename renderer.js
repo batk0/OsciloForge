@@ -103,20 +103,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
         ctx.strokeStyle = axisColor;
         ctx.lineWidth = 1;
+
+        // Left Y-Axis (labeled)
         ctx.beginPath();
-        // Y-axis line is drawn at LEFT_PADDING, but its extent is TOP_PADDING to TOP_PADDING + chartHeight
         ctx.moveTo(LEFT_PADDING, TOP_PADDING);
         ctx.lineTo(LEFT_PADDING, TOP_PADDING + chartHeight);
+        ctx.stroke();
+
+        // Center Y-Axis (unlabeled)
+        ctx.beginPath();
+        ctx.moveTo(LEFT_PADDING + chartWidth / 2, TOP_PADDING);
+        ctx.lineTo(LEFT_PADDING + chartWidth / 2, TOP_PADDING + chartHeight);
+        ctx.stroke();
+
+        // Right Y-Axis (unlabeled)
+        ctx.beginPath();
+        ctx.moveTo(LEFT_PADDING + chartWidth, TOP_PADDING);
+        ctx.lineTo(LEFT_PADDING + chartWidth, TOP_PADDING + chartHeight);
         ctx.stroke();
 
         for (let i = 0; i < yTickCount; i++) {
             const y = TOP_PADDING + (i / (yTickCount - 1)) * chartHeight; // Y-position now offset by TOP_PADDING
             const percentage = 100 - (i * yMinorTickInterval); // From 100 down to -100
 
-            // Draw Tick
+            // Draw Tick on Left Y-Axis (inner side)
             ctx.beginPath();
-            ctx.moveTo(LEFT_PADDING - 5, y); // Tick relative to LEFT_PADDING
-            ctx.lineTo(LEFT_PADDING, y);
+            ctx.moveTo(LEFT_PADDING, y);
+            ctx.lineTo(LEFT_PADDING + 5, y);
+            ctx.stroke();
+
+            // Draw Tick on Center Y-Axis (both sides)
+            ctx.beginPath();
+            ctx.moveTo(LEFT_PADDING + chartWidth / 2 - 5, y);
+            ctx.lineTo(LEFT_PADDING + chartWidth / 2 + 5, y);
+            ctx.stroke();
+
+            // Draw Tick on Right Y-Axis (inner side)
+            ctx.beginPath();
+            ctx.moveTo(LEFT_PADDING + chartWidth - 5, y);
+            ctx.lineTo(LEFT_PADDING + chartWidth, y);
             ctx.stroke();
 
             // Draw Grid Line and Label for major ticks
@@ -142,19 +167,45 @@ document.addEventListener('DOMContentLoaded', () => {
         const xTickCount = yTickCount; // Same amount of ticks as Y-axis (41)
         
         ctx.strokeStyle = axisColor;
+
+        // Top X-Axis
         ctx.beginPath();
-        ctx.moveTo(LEFT_PADDING, TOP_PADDING + chartHeight / 2); // X-axis at vertical center, offset by padding
+        ctx.moveTo(LEFT_PADDING, TOP_PADDING);
+        ctx.lineTo(LEFT_PADDING + chartWidth, TOP_PADDING);
+        ctx.stroke();
+
+        // Center X-Axis
+        ctx.beginPath();
+        ctx.moveTo(LEFT_PADDING, TOP_PADDING + chartHeight / 2);
         ctx.lineTo(LEFT_PADDING + chartWidth, TOP_PADDING + chartHeight / 2);
+        ctx.stroke();
+
+        // Bottom X-Axis
+        ctx.beginPath();
+        ctx.moveTo(LEFT_PADDING, TOP_PADDING + chartHeight);
+        ctx.lineTo(LEFT_PADDING + chartWidth, TOP_PADDING + chartHeight);
         ctx.stroke();
 
         for (let i = 0; i < xTickCount; i++) {
             const x = LEFT_PADDING + (i / (xTickCount - 1)) * chartWidth; // Position relative to chartWidth
             const pointValue = Math.round((i / (xTickCount - 1)) * (WAVEFORM_POINTS - 1));
 
-            // Draw Tick
+            // Draw Tick on Top X-Axis (inner side)
             ctx.beginPath();
-            ctx.moveTo(x, TOP_PADDING + chartHeight / 2); // Start at central X-axis
-            ctx.lineTo(x, TOP_PADDING + chartHeight / 2 + 5); // Extend downwards
+            ctx.moveTo(x, TOP_PADDING);
+            ctx.lineTo(x, TOP_PADDING + (i % xMajorTickInterval === 0 ? 8 : 5)); // Longer for major ticks
+            ctx.stroke();
+
+            // Draw Tick on central X-Axis (both sides)
+            ctx.beginPath();
+            ctx.moveTo(x, TOP_PADDING + chartHeight / 2 - (i % xMajorTickInterval === 0 ? 8 : 5)); // Longer for major ticks
+            ctx.lineTo(x, TOP_PADDING + chartHeight / 2 + (i % xMajorTickInterval === 0 ? 8 : 5)); // Longer for major ticks
+            ctx.stroke();
+
+            // Draw Tick on Bottom X-Axis (inner side)
+            ctx.beginPath();
+            ctx.moveTo(x, TOP_PADDING + chartHeight - (i % xMajorTickInterval === 0 ? 8 : 5)); // Longer for major ticks
+            ctx.lineTo(x, TOP_PADDING + chartHeight);
             ctx.stroke();
 
             // Draw Grid Line and Label for major ticks
@@ -168,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.fillStyle = textColor;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
-                ctx.fillText(pointValue, x, TOP_PADDING + chartHeight / 2 + 10); // Label below central X-axis
+                ctx.fillText(pointValue, x, TOP_PADDING + chartHeight + 10); // Label below BOTTOM X-axis
             }
             ctx.strokeStyle = axisColor; // Reset for minor ticks
         }
