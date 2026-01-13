@@ -214,11 +214,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleFreehandDraw(event) {
         if (!isDrawing) return;
         
-        const chartWidth = canvas.width - AXIS_PADDING;
-        const chartHeight = canvas.height - AXIS_PADDING;
+        const chartWidth = canvas.width - (LEFT_PADDING + RIGHT_PADDING);
+        const chartHeight = canvas.height - (TOP_PADDING + BOTTOM_PADDING);
         const xScale = (chartWidth / WAVEFORM_POINTS) * hZoom;
         const mousePos = getMousePos(event);
-        const currentPointX = Math.floor((mousePos.x - AXIS_PADDING) / xScale);
+        const currentPointX = Math.floor((mousePos.x - LEFT_PADDING) / xScale);
 
         if (currentPointX >= 0 && currentPointX < WAVEFORM_POINTS) {
             const vCenter = chartHeight / 2;
@@ -247,11 +247,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleLineDraw(event) {
-        const chartWidth = canvas.width - AXIS_PADDING;
-        const chartHeight = canvas.height - AXIS_PADDING;
+        const chartWidth = canvas.width - (LEFT_PADDING + RIGHT_PADDING);
+        const chartHeight = canvas.height - (TOP_PADDING + BOTTOM_PADDING);
         const xScale = (chartWidth / WAVEFORM_POINTS) * hZoom;
         const mousePos = getMousePos(event);
-        const currentPointX = Math.floor((mousePos.x - AXIS_PADDING) / xScale);
+        const currentPointX = Math.floor((mousePos.x - LEFT_PADDING) / xScale);
 
         if (currentPointX >= 0 && currentPointX < WAVEFORM_POINTS) {
             const vCenter = chartHeight / 2;
