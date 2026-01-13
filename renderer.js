@@ -144,13 +144,14 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.lineTo(LEFT_PADDING + chartWidth, y);
             ctx.stroke();
 
-            // Draw Grid Line and Label for major ticks
+            // Draw Grid Line (as dots) and Label for major ticks
             if (percentage % yMajorTickInterval === 0) { // Major ticks every 25%
-                ctx.strokeStyle = gridColor;
-                ctx.beginPath();
-                ctx.moveTo(LEFT_PADDING, y); // Grid line starts after LEFT_PADDING
-                ctx.lineTo(LEFT_PADDING + chartWidth, y); // Spans chartWidth
-                ctx.stroke();
+                ctx.fillStyle = gridColor;
+                const xTickCount = yTickCount; // Same amount of ticks as Y-axis (41)
+                for (let j = 0; j < xTickCount; j++) {
+                    const x = LEFT_PADDING + (j / (xTickCount - 1)) * chartWidth;
+                    ctx.fillRect(x - 1, y - 1, 2, 2); // Draw a dot
+                }
                 
                 ctx.fillStyle = textColor;
                 ctx.textAlign = 'right';
@@ -208,14 +209,14 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.lineTo(x, TOP_PADDING + chartHeight);
             ctx.stroke();
 
-            // Draw Grid Line and Label for major ticks
+            // Draw Grid Line (as dots) and Label for major ticks
             if (i % xMajorTickInterval === 0) { // Major ticks every 5th minor tick
-                ctx.strokeStyle = gridColor;
-                ctx.beginPath();
-                ctx.moveTo(x, TOP_PADDING); // Span from top padding to bottom padding
-                ctx.lineTo(x, TOP_PADDING + chartHeight);
-                ctx.stroke();
-
+                ctx.fillStyle = gridColor;
+                const yTickCount = xTickCount;
+                for (let j = 0; j < yTickCount; j++) {
+                    const y = TOP_PADDING + (j / (yTickCount - 1)) * chartHeight;
+                    ctx.fillRect(x - 1, y - 1, 2, 2); // Draw a dot
+                }
                 ctx.fillStyle = textColor;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
