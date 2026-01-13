@@ -17,7 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const downloadDeviceBtn = document.getElementById('download-device-btn');
 
     const WAVEFORM_POINTS = 4096;
-    const AXIS_PADDING = 50; // Space for axis labels
+    const TOP_PADDING = 20; // For 100% label
+    const RIGHT_PADDING = 20; // For 4095 label
+    const BOTTOM_PADDING = 30; // For X-axis labels
+    const LEFT_PADDING = 50; // For Y-axis labels
     const initialWaveformData = new Float32Array(WAVEFORM_POINTS).fill(0.0);
     let lastLoadedWaveformData = new Float32Array(initialWaveformData);
     let waveformData = new Float32Array(initialWaveformData);
@@ -42,16 +45,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function draw() {
-        // Match the drawing buffer to the displayed size
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
 
-        if (canvas.width <= AXIS_PADDING || canvas.height <= AXIS_PADDING) {
+        if (canvas.width <= (LEFT_PADDING + RIGHT_PADDING) || canvas.height <= (TOP_PADDING + BOTTOM_PADDING)) {
             return; // Don't draw if we have no space
         }
 
-        const chartWidth = canvas.width - AXIS_PADDING;
-        const chartHeight = canvas.height - AXIS_PADDING;
+        const chartWidth = canvas.width - (LEFT_PADDING + RIGHT_PADDING);
+        const chartHeight = canvas.height - (TOP_PADDING + BOTTOM_PADDING);
 
         const vCenter = chartHeight / 2;
         const vScale = (chartHeight / 2) * vZoom;
@@ -62,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
         drawAxesAndGrid(chartWidth, chartHeight);
         
         ctx.save();
-        ctx.translate(AXIS_PADDING, 0);
+        ctx.translate(LEFT_PADDING, TOP_PADDING); // Translate by left and top padding
 
         if (drawStyle === 'line') {
             ctx.strokeStyle = '#ff0000'; // Red
@@ -94,72 +96,79 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.font = '12px sans-serif';
         
         // --- Y-Axis and Horizontal Grid ---
-        const yTickCount = 11; // 100%, 80%, ..., -100%
+        const yMinorTickInterval = 5; // %
+        const yMajorTickInterval = 25; // %
+        const yRange = 200; // From 100% to -100%
+        const yTickCount = (yRange / yMinorTickInterval) + 1; // 40 intervals + 1 = 41 ticks
+
         ctx.strokeStyle = axisColor;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(AXIS_PADDING, 0); // Left edge of chart area
-        ctx.lineTo(AXIS_PADDING, chartHeight);
+        // Y-axis line is drawn at LEFT_PADDING, but its extent is TOP_PADDING to TOP_PADDING + chartHeight
+        ctx.moveTo(LEFT_PADDING, TOP_PADDING);
+        ctx.lineTo(LEFT_PADDING, TOP_PADDING + chartHeight);
         ctx.stroke();
 
         for (let i = 0; i < yTickCount; i++) {
-            const y = (i / (yTickCount - 1)) * chartHeight;
-            const percentage = 100 - (i * (200 / (yTickCount - 1))); // From 100 down to -100
+            const y = TOP_PADDING + (i / (yTickCount - 1)) * chartHeight; // Y-position now offset by TOP_PADDING
+            const percentage = 100 - (i * yMinorTickInterval); // From 100 down to -100
 
             // Draw Tick
             ctx.beginPath();
-            ctx.moveTo(AXIS_PADDING - 5, y);
-            ctx.lineTo(AXIS_PADDING, y);
+            ctx.moveTo(LEFT_PADDING - 5, y); // Tick relative to LEFT_PADDING
+            ctx.lineTo(LEFT_PADDING, y);
             ctx.stroke();
 
             // Draw Grid Line and Label for major ticks
-            if (i % 2 === 0) { // Major ticks every 2nd (e.g., 100, 60, 20, -20, -60, -100)
+            if (percentage % yMajorTickInterval === 0) { // Major ticks every 25%
                 ctx.strokeStyle = gridColor;
                 ctx.beginPath();
-                ctx.moveTo(AXIS_PADDING, y);
-                ctx.lineTo(canvas.width, y); // Span full canvas width
+                ctx.moveTo(LEFT_PADDING, y); // Grid line starts after LEFT_PADDING
+                ctx.lineTo(LEFT_PADDING + chartWidth, y); // Spans chartWidth
                 ctx.stroke();
                 
                 ctx.fillStyle = textColor;
                 ctx.textAlign = 'right';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(`${percentage}%`, AXIS_PADDING - 10, y);
+                ctx.fillText(`${percentage}%`, LEFT_PADDING - 10, y); // Label relative to LEFT_PADDING
             }
             ctx.strokeStyle = axisColor; // Reset for minor ticks
         }
         
         // --- X-Axis and Vertical Grid ---
-        const xScale = (chartWidth / WAVEFORM_POINTS) * hZoom; // Using the responsive xScale
-        const xTickCount = 11; // For 0 to 4095
+        const xScaleForAxes = chartWidth / (WAVEFORM_POINTS - 1); // Scale for axis ticks, not drawing data
+        const xMinorTickInterval = Math.round(WAVEFORM_POINTS / 40); // For 41 ticks, roughly 100 points per tick
+        const xMajorTickInterval = 5; // Every 5th minor tick
+        const xTickCount = yTickCount; // Same amount of ticks as Y-axis (41)
         
         ctx.strokeStyle = axisColor;
         ctx.beginPath();
-        ctx.moveTo(AXIS_PADDING, chartHeight / 2); // X-axis at vertical center
-        ctx.lineTo(canvas.width, chartHeight / 2);
+        ctx.moveTo(LEFT_PADDING, TOP_PADDING + chartHeight / 2); // X-axis at vertical center, offset by padding
+        ctx.lineTo(LEFT_PADDING + chartWidth, TOP_PADDING + chartHeight / 2);
         ctx.stroke();
 
         for (let i = 0; i < xTickCount; i++) {
-            const x = AXIS_PADDING + (i / (xTickCount - 1)) * chartWidth; // Position relative to chartWidth
+            const x = LEFT_PADDING + (i / (xTickCount - 1)) * chartWidth; // Position relative to chartWidth
             const pointValue = Math.round((i / (xTickCount - 1)) * (WAVEFORM_POINTS - 1));
 
             // Draw Tick
             ctx.beginPath();
-            ctx.moveTo(x, chartHeight / 2); // Start at central X-axis
-            ctx.lineTo(x, chartHeight / 2 + 5); // Extend downwards
+            ctx.moveTo(x, TOP_PADDING + chartHeight / 2); // Start at central X-axis
+            ctx.lineTo(x, TOP_PADDING + chartHeight / 2 + 5); // Extend downwards
             ctx.stroke();
 
             // Draw Grid Line and Label for major ticks
-            if (i % 2 === 0) { // Major ticks every 2nd (e.g., 0, 819, 1638, ...)
+            if (i % xMajorTickInterval === 0) { // Major ticks every 5th minor tick
                 ctx.strokeStyle = gridColor;
                 ctx.beginPath();
-                ctx.moveTo(x, 0); // Span full height
-                ctx.lineTo(x, chartHeight);
+                ctx.moveTo(x, TOP_PADDING); // Span from top padding to bottom padding
+                ctx.lineTo(x, TOP_PADDING + chartHeight);
                 ctx.stroke();
 
                 ctx.fillStyle = textColor;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
-                ctx.fillText(pointValue, x, chartHeight / 2 + 10); // Label below central X-axis
+                ctx.fillText(pointValue, x, TOP_PADDING + chartHeight / 2 + 10); // Label below central X-axis
             }
             ctx.strokeStyle = axisColor; // Reset for minor ticks
         }
@@ -214,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentPointX >= 0 && currentPointX < WAVEFORM_POINTS) {
             const vCenter = chartHeight / 2;
             const vScale = (chartHeight / 2) * vZoom;
-            let value = (vCenter - mousePos.y) / vScale;
+            let value = (vCenter - (mousePos.y - TOP_PADDING)) / vScale; // Account for TOP_PADDING
             value = Math.max(-1.0, Math.min(1.0, value));
 
             if (lastPoint.x !== -1 && lastPoint.x !== currentPointX) {
@@ -247,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentPointX >= 0 && currentPointX < WAVEFORM_POINTS) {
             const vCenter = chartHeight / 2;
             const vScale = (chartHeight / 2) * vZoom;
-            let value = (vCenter - mousePos.y) / vScale;
+            let value = (vCenter - (mousePos.y - TOP_PADDING)) / vScale; // Account for TOP_PADDING
             value = Math.max(-1.0, Math.min(1.0, value));
 
             if (!lineStartPoint) {
