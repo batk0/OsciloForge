@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetBtn = document.getElementById('reset-btn');
     const hZoomSlider = document.getElementById('h-zoom');
     const vZoomSlider = document.getElementById('v-zoom');
+    const shiftLeftBtn = document.getElementById('shift-left-btn');
+    const shiftRightBtn = document.getElementById('shift-right-btn');
     const drawStyleLine = document.getElementById('draw-style-line');
     const drawStyleDots = document.getElementById('draw-style-dots');
     const waveformTypeSelect = document.getElementById('waveform-type');
@@ -27,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let hZoom = 1;
     let vZoom = 1;
+    let viewOffset = 0; // The starting point of the waveform data to display
     let drawStyle = 'line';
 
     let isDrawing = false;
@@ -57,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const vCenter = chartHeight / 2;
         const vScale = (chartHeight / 2) * vZoom;
-        const xScale = (chartWidth / WAVEFORM_POINTS) * hZoom;
         
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
@@ -65,24 +67,34 @@ document.addEventListener('DOMContentLoaded', () => {
         
         ctx.save();
         ctx.translate(LEFT_PADDING, TOP_PADDING); // Translate by left and top padding
+        ctx.beginPath();
+        ctx.rect(0, 0, chartWidth, chartHeight);
+        ctx.clip();
+
+        const visiblePoints = WAVEFORM_POINTS / hZoom;
+        const startPoint = Math.floor(viewOffset);
+        const endPoint = Math.min(startPoint + Math.ceil(visiblePoints) + 1, WAVEFORM_POINTS);
+        const localXScale = chartWidth / visiblePoints;
 
         if (drawStyle === 'line') {
             ctx.strokeStyle = '#ff0000'; // Red
             ctx.lineWidth = 1.5;
             ctx.beginPath();
-            for (let i = 0; i < WAVEFORM_POINTS; i++) {
-                const x = i * xScale;
+            for (let i = startPoint; i < endPoint; i++) {
+                const x = (i - viewOffset) * localXScale;
                 const y = vCenter - (waveformData[i] * vScale);
-                if (i === 0) ctx.moveTo(x, y);
+                if (i === startPoint) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             }
             ctx.stroke();
         } else if (drawStyle === 'dots') {
             ctx.fillStyle = '#ff0000'; // Red
-            for (let i = 0; i < WAVEFORM_POINTS; i++) {
-                const x = i * xScale;
+            for (let i = startPoint; i < endPoint; i++) {
+                const x = (i - viewOffset) * localXScale;
                 const y = vCenter - (waveformData[i] * vScale);
-                ctx.fillRect(x - 1, y - 1, 2, 2);
+                if (x >= 0 && x <= chartWidth) {
+                    ctx.fillRect(x - 1, y - 1, 2, 2);
+                }
             }
         }
         ctx.restore();
@@ -162,8 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // --- X-Axis and Vertical Grid ---
-        const xScaleForAxes = chartWidth / (WAVEFORM_POINTS - 1); // Scale for axis ticks, not drawing data
-        const xMinorTickInterval = Math.round(WAVEFORM_POINTS / 40); // For 41 ticks, roughly 100 points per tick
         const xMajorTickInterval = 5; // Every 5th minor tick
         const xTickCount = yTickCount; // Same amount of ticks as Y-axis (41)
         
@@ -189,7 +199,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         for (let i = 0; i < xTickCount; i++) {
             const x = LEFT_PADDING + (i / (xTickCount - 1)) * chartWidth; // Position relative to chartWidth
-            const pointValue = Math.round((i / (xTickCount - 1)) * (WAVEFORM_POINTS - 1));
+            
+            const visiblePoints = WAVEFORM_POINTS / hZoom;
+            const pointValue = Math.round(viewOffset + (i / (xTickCount - 1)) * visiblePoints);
+            const clampedPointValue = Math.min(pointValue, WAVEFORM_POINTS - 1);
 
             // Draw Tick on Top X-Axis (inner side)
             ctx.beginPath();
@@ -212,15 +225,15 @@ document.addEventListener('DOMContentLoaded', () => {
             // Draw Grid Line (as dots) and Label for major ticks
             if (i % xMajorTickInterval === 0) { // Major ticks every 5th minor tick
                 ctx.fillStyle = gridColor;
-                const yTickCount = xTickCount;
-                for (let j = 0; j < yTickCount; j++) {
-                    const y = TOP_PADDING + (j / (yTickCount - 1)) * chartHeight;
+                const yTickCountForGrid = xTickCount;
+                for (let j = 0; j < yTickCountForGrid; j++) {
+                    const y = TOP_PADDING + (j / (yTickCountForGrid - 1)) * chartHeight;
                     ctx.fillRect(x - 1, y - 1, 2, 2); // Draw a dot
                 }
                 ctx.fillStyle = textColor;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
-                ctx.fillText(pointValue, x, TOP_PADDING + chartHeight + 10); // Label below BOTTOM X-axis
+                ctx.fillText(clampedPointValue, x, TOP_PADDING + chartHeight + 10); // Label below BOTTOM X-axis
             }
             ctx.strokeStyle = axisColor; // Reset for minor ticks
         }
@@ -268,9 +281,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const chartWidth = canvas.width - (LEFT_PADDING + RIGHT_PADDING);
         const chartHeight = canvas.height - (TOP_PADDING + BOTTOM_PADDING);
-        const xScale = (chartWidth / WAVEFORM_POINTS) * hZoom;
         const mousePos = getMousePos(event);
-        const currentPointX = Math.floor((mousePos.x - LEFT_PADDING) / xScale);
+
+        const visiblePoints = WAVEFORM_POINTS / hZoom;
+        const localXScale = chartWidth / visiblePoints;
+        
+        const dataIndexFloat = (mousePos.x - LEFT_PADDING) / localXScale + viewOffset;
+        const currentPointX = Math.floor(dataIndexFloat);
 
         if (currentPointX >= 0 && currentPointX < WAVEFORM_POINTS) {
             const vCenter = chartHeight / 2;
@@ -284,13 +301,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const startY = (lastPoint.x < currentPointX) ? lastPoint.y : value;
                 const endY = (lastPoint.x < currentPointX) ? value : lastPoint.y;
                 for (let i = startX; i <= endX; i++) {
-                    if (i < waveformData.length) {
+                    if (i >= 0 && i < waveformData.length) {
                        const t = (endX - startX === 0) ? 1.0 : (i - startX) / (endX - startX);
                        waveformData[i] = startY + t * (endY - startY);
                     }
                 }
             } else {
-                waveformData[currentPointX] = value;
+                 if (currentPointX >= 0 && currentPointX < waveformData.length) {
+                    waveformData[currentPointX] = value;
+                }
             }
             
             lastPoint = { x: currentPointX, y: value };
@@ -301,9 +320,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleLineDraw(event) {
         const chartWidth = canvas.width - (LEFT_PADDING + RIGHT_PADDING);
         const chartHeight = canvas.height - (TOP_PADDING + BOTTOM_PADDING);
-        const xScale = (chartWidth / WAVEFORM_POINTS) * hZoom;
         const mousePos = getMousePos(event);
-        const currentPointX = Math.floor((mousePos.x - LEFT_PADDING) / xScale);
+
+        const visiblePoints = WAVEFORM_POINTS / hZoom;
+        const localXScale = chartWidth / visiblePoints;
+        
+        const dataIndexFloat = (mousePos.x - LEFT_PADDING) / localXScale + viewOffset;
+        const currentPointX = Math.floor(dataIndexFloat);
 
         if (currentPointX >= 0 && currentPointX < WAVEFORM_POINTS) {
             const vCenter = chartHeight / 2;
@@ -319,18 +342,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 const startY_val = (lineStartPoint.x < currentPointX) ? lineStartPoint.y : value;
                 const endY_val = (lineStartPoint.x < currentPointX) ? value : lineStartPoint.y;
                 for (let i = startX; i <= endX; i++) {
-                    if (i < waveformData.length) {
+                     if (i >= 0 && i < waveformData.length) {
                         const t = (endX - startX === 0) ? 1.0 : (i - startX) / (endX - startX);
                         waveformData[i] = startY_val + t * (endY_val - startY_val);
                     }
                 }
-                lineStartPoint = { x: currentPointX, y: value };
+                lineStartPoint = null; // End line after drawing
                 draw();
             }
         }
     }
 
     canvas.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return; // Only main button
+        const chartWidth = canvas.width - (LEFT_PADDING + RIGHT_PADDING);
+        const mousePos = getMousePos(e);
+        if (mousePos.x < LEFT_PADDING || mousePos.x > LEFT_PADDING + chartWidth) {
+            return; // Don't draw if outside the chart area
+        }
+
         if (editMode === 'freehand') {
             isDrawing = true;
             handleFreehandDraw(e); 
@@ -369,8 +399,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Event Listeners ---
 
+    shiftLeftBtn.addEventListener('click', () => {
+        const visiblePoints = WAVEFORM_POINTS / hZoom;
+        const shiftAmount = Math.max(1, Math.floor(visiblePoints / 10)); // Shift by 10% of visible or at least 1
+        viewOffset = Math.max(0, viewOffset - shiftAmount);
+        draw();
+    });
+
+    shiftRightBtn.addEventListener('click', () => {
+        const visiblePoints = WAVEFORM_POINTS / hZoom;
+        const shiftAmount = Math.max(1, Math.floor(visiblePoints / 10));
+        const maxOffset = Math.max(0, WAVEFORM_POINTS - visiblePoints);
+        viewOffset = Math.min(maxOffset, viewOffset + shiftAmount);
+        draw();
+    });
+
     hZoomSlider.addEventListener('input', (e) => {
-        hZoom = parseFloat(e.target.value);
+        const oldHZoom = hZoom;
+        const newHZoom = parseFloat(e.target.value);
+
+        const visiblePointsOld = WAVEFORM_POINTS / oldHZoom;
+        const visiblePointsNew = WAVEFORM_POINTS / newHZoom;
+
+        const centerPoint = viewOffset + visiblePointsOld / 2;
+
+        let newViewOffset = centerPoint - visiblePointsNew / 2;
+
+        const maxOffset = Math.max(0, WAVEFORM_POINTS - visiblePointsNew);
+        newViewOffset = Math.max(0, Math.min(maxOffset, newViewOffset));
+
+        hZoom = newHZoom;
+        viewOffset = newViewOffset;
         draw();
     });
 
@@ -412,12 +471,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const finalData = new Float32Array(WAVEFORM_POINTS); // Inits with 0.0
 
-                // Copy the loaded data, truncating or padding as necessary.
                 const clampedData = numericData.slice(0, WAVEFORM_POINTS).map(val => Math.max(-1.0, Math.min(1.0, val)));
                 finalData.set(clampedData);
 
                 waveformData = finalData;
                 lastLoadedWaveformData = new Float32Array(finalData);
+                
+                // Reset zoom and pan on new file
+                hZoom = 1;
+                hZoomSlider.value = 1;
+                vZoom = 1;
+                vZoomSlider.value = 1;
+                viewOffset = 0;
+
                 draw();
             }
         }
@@ -430,6 +496,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     resetBtn.addEventListener('click', () => {
         waveformData = new Float32Array(lastLoadedWaveformData);
+        hZoom = 1;
+        hZoomSlider.value = 1;
+        vZoom = 1;
+        vZoomSlider.value = 1;
+        viewOffset = 0;
         draw();
     });
 
@@ -439,7 +510,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const cycles = parseInt(cyclesInput.value);
         const dutyCycle = parseInt(dutyCycleInput.value);
 
-        // Input validation
         if (isNaN(amplitude) || amplitude < 0 || amplitude > 1) {
             alert('Amplitude must be between 0 and 1.');
             return;
@@ -467,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Unknown waveform type:', type);
                 return;
         }
-        lastLoadedWaveformData = new Float32Array(waveformData); // Update last loaded for reset
+        lastLoadedWaveformData = new Float32Array(waveformData);
         draw();
     });
 
