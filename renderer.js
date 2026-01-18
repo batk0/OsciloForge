@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const vZoomSlider = document.getElementById('v-zoom');
     const shiftLeftBtn = document.getElementById('shift-left-btn');
     const shiftRightBtn = document.getElementById('shift-right-btn');
+    const shiftUpBtn = document.getElementById('shift-up-btn');
+    const shiftDownBtn = document.getElementById('shift-down-btn');
     const drawStyleLine = document.getElementById('draw-style-line');
     const drawStyleDots = document.getElementById('draw-style-dots');
     const waveformTypeSelect = document.getElementById('waveform-type');
@@ -30,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let hZoom = 1;
     let vZoom = 1;
     let viewOffset = 0; // The starting point of the waveform data to display
+    let vShift = 0;
     let drawStyle = 'line';
 
     let isDrawing = false;
@@ -58,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const chartWidth = canvas.width - (LEFT_PADDING + RIGHT_PADDING);
         const chartHeight = canvas.height - (TOP_PADDING + BOTTOM_PADDING);
 
-        const vCenter = chartHeight / 2;
+        const vCenter = chartHeight / 2 + vShift;
         const vScale = (chartHeight / 2) * vZoom;
         
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -135,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.stroke();
 
         for (let i = 0; i < yTickCount; i++) {
-            const y = TOP_PADDING + (i / (yTickCount - 1)) * chartHeight; // Y-position now offset by TOP_PADDING
+            const y = TOP_PADDING + (i / (yTickCount - 1)) * chartHeight + vShift; // Y-position now offset by TOP_PADDING
             const percentage = 100 - (i * yMinorTickInterval); // From 100 down to -100
 
             // Draw Tick on Left Y-Axis (inner side)
@@ -168,7 +171,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.fillStyle = textColor;
                 ctx.textAlign = 'right';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(`${percentage}%`, LEFT_PADDING - 10, y); // Label relative to LEFT_PADDING
+                let displayPercentage = Number.parseFloat((percentage / vZoom).toFixed(2));
+                ctx.fillText(`${displayPercentage}%`, LEFT_PADDING - 10, y); // Label relative to LEFT_PADDING
             }
             ctx.strokeStyle = axisColor; // Reset for minor ticks
         }
@@ -187,8 +191,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Center X-Axis
         ctx.beginPath();
-        ctx.moveTo(LEFT_PADDING, TOP_PADDING + chartHeight / 2);
-        ctx.lineTo(LEFT_PADDING + chartWidth, TOP_PADDING + chartHeight / 2);
+        ctx.moveTo(LEFT_PADDING, TOP_PADDING + chartHeight / 2 + vShift);
+        ctx.lineTo(LEFT_PADDING + chartWidth, TOP_PADDING + chartHeight / 2 + vShift);
         ctx.stroke();
 
         // Bottom X-Axis
@@ -212,8 +216,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Draw Tick on central X-Axis (both sides)
             ctx.beginPath();
-            ctx.moveTo(x, TOP_PADDING + chartHeight / 2 - (i % xMajorTickInterval === 0 ? 8 : 5)); // Longer for major ticks
-            ctx.lineTo(x, TOP_PADDING + chartHeight / 2 + (i % xMajorTickInterval === 0 ? 8 : 5)); // Longer for major ticks
+            ctx.moveTo(x, TOP_PADDING + chartHeight / 2 + vShift - (i % xMajorTickInterval === 0 ? 8 : 5)); // Longer for major ticks
+            ctx.lineTo(x, TOP_PADDING + chartHeight / 2 + vShift + (i % xMajorTickInterval === 0 ? 8 : 5)); // Longer for major ticks
             ctx.stroke();
 
             // Draw Tick on Bottom X-Axis (inner side)
@@ -414,6 +418,19 @@ document.addEventListener('DOMContentLoaded', () => {
         draw();
     });
 
+    shiftUpBtn.addEventListener("click", () => {
+        // canvas.clientHeight;
+        const chartHeight = canvas.height - (TOP_PADDING + BOTTOM_PADDING);
+        vShift -= Math.max(1, Math.floor(chartHeight / 38));
+        draw();
+    });
+  
+    shiftDownBtn.addEventListener("click", () => {
+        const chartHeight = canvas.height - (TOP_PADDING + BOTTOM_PADDING);
+        vShift += Math.max(1, Math.floor(chartHeight / 38));
+        draw();
+    });
+    
     hZoomSlider.addEventListener('input', (e) => {
         const oldHZoom = hZoom;
         const newHZoom = parseFloat(e.target.value);
