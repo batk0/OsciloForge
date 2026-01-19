@@ -1,37 +1,49 @@
-# GEMINI Project: waveform
+# OscilloForge
 
-## Project Overview
+![OscilloForge Screenshot](placeholder.png)
+*(Feel free to replace `placeholder.png` with a screenshot of the application)*
 
-This project is a simple desktop waveform editor built with Electron. It allows users to open, view, edit, and save waveform data. The waveform is visualized on an HTML canvas, and the data is imported from and exported to CSV files.
+## Overview
 
-The application is structured as a standard Electron project:
-- **Main Process (`main.js`):** Manages the application lifecycle, creates the browser window, and handles native desktop interactions like opening and saving files using Electron's `dialog` and Node.js's `fs` module.
-- **Renderer Process (`renderer.js`):** Controls the user interface (`index.html`). It handles user input (button clicks, mouse drawing, zoom sliders) and renders the waveform on the canvas.
-- **Preload Script (`preload.js`):** Acts as a bridge between the main and renderer processes to securely expose Node.js functionality to the frontend via the `contextBridge`.
+OscilloForge is a cross-platform desktop waveform editor built with Electron. It provides a set of tools for creating, viewing, and manipulating waveform data, inspired by the functionality of software for digital storage oscilloscopes.
 
-## Building and Running
+The application features a responsive UI that adapts to the window size and a dark theme suitable for technical applications.
+
+## Features
+
+-   **File Operations:** Open and save waveform data in both CSV and the proprietary ARB format.
+-   **Waveform Generation:** Generate standard **Sine**, **Square**, and **Triangle** waves with adjustable amplitude, cycles, and duty cycle.
+-   **Interactive Editing:**
+    -   **Freehand Drawing:** Click and drag to draw the waveform.
+    -   **Line Drawing:** Click to set points and draw connected straight lines.
+-   **Advanced Navigation:**
+    -   Independent horizontal and vertical zoom.
+    -   Fluid panning in all directions.
+    -   **Mouse Controls:** Use `Shift + Drag` to pan and `Cmd/Ctrl + Drag` to perform a direction-locked zoom.
+-   **Dynamic Grid:** An oscilloscope-style grid that dynamically adjusts its density as you zoom, providing a clear and constant visual reference.
+
+## Getting Started
 
 ### Prerequisites
-- Node.js and npm must be installed.
+
+-   [Node.js](https://nodejs.org/) and npm must be installed on your system.
 
 ### Installation
-To install the dependencies, run the following command in your terminal:
-```bash
-npm install
-```
+
+1.  Clone the repository or download the source code.
+2.  Navigate to the project directory and install the dependencies:
+    ```bash
+    npm install
+    ```
 
 ### Running the Application
-To start the application, run:
+
+To start OscilloForge in development mode, run the following command:
+
 ```bash
 npm start
 ```
-This will launch the Waveform Editor window.
 
-### Testing
-There are no automated tests configured for this project. The `test` script in `package.json` is a placeholder.
+## License
 
-## Development Conventions
-
-- **Code Style:** The JavaScript code follows standard conventions, using `const` and `let` for variable declarations.
-- **IPC:** Inter-Process Communication between the main and renderer processes is handled via `ipcMain.handle` and `window.electronAPI` exposed through the `preload.js` script. This is a secure way to handle IPC in modern Electron applications.
-- **File Handling:** The application works with CSV files. The main process reads and writes files, and the renderer process parses and serializes the data.
+This project is licensed under the ISC License.
