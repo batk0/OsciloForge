@@ -40,6 +40,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let editMode = document.querySelector('input[name="edit-mode"]:checked').value;
     let lineStartPoint = null; // For line drawing mode
 
+    // Mouse pan/zoom state
+    let isPanning = false;
+    let isZooming = false;
+    let zoomDirection = 'none'; // 'horizontal' | 'vertical' | 'none'
+    let dragStartPos = { x: 0, y: 0 };
+    let dragStartHOffset = 0;
+    let dragStartVOffset = 0;
+    let dragStartHZoom = 1;
+    let dragStartVZoom = 1;
+
     // --- Canvas and Drawing ---
 
     function setupCanvas() {
@@ -290,9 +300,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentPointX = Math.floor(dataIndexFloat);
 
         if (currentPointX >= 0 && currentPointX < WAVEFORM_POINTS) {
-            const vCenter = chartHeight / 2;
+            const vCenter = chartHeight / 2 + vShift;
             const vScale = (chartHeight / 2) * vZoom;
-            let value = (vCenter - (mousePos.y - TOP_PADDING)) / vScale; // Account for TOP_PADDING
+            let value = (vCenter - (mousePos.y - TOP_PADDING)) / vScale;
             value = Math.max(-1.0, Math.min(1.0, value));
 
             if (lastPoint.x !== -1 && lastPoint.x !== currentPointX) {
@@ -329,9 +339,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentPointX = Math.floor(dataIndexFloat);
 
         if (currentPointX >= 0 && currentPointX < WAVEFORM_POINTS) {
-            const vCenter = chartHeight / 2;
+            const vCenter = chartHeight / 2 + vShift;
             const vScale = (chartHeight / 2) * vZoom;
-            let value = (vCenter - (mousePos.y - TOP_PADDING)) / vScale; // Account for TOP_PADDING
+            let value = (vCenter - (mousePos.y - TOP_PADDING)) / vScale;
             value = Math.max(-1.0, Math.min(1.0, value));
 
             if (!lineStartPoint) {
@@ -354,22 +364,52 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     canvas.addEventListener('mousedown', (e) => {
-        if (e.button !== 0) return; // Only main button
+        if (e.shiftKey) {
+            isPanning = true;
+            dragStartPos = getMousePos(e);
+            dragStartHOffset = viewOffset;
+            dragStartVOffset = vShift;
+            e.preventDefault();
+            canvas.style.cursor = 'grabbing';
+            return;
+        }
+        if (e.metaKey || e.ctrlKey) {
+            isZooming = true;
+            zoomDirection = 'none';
+            dragStartPos = getMousePos(e);
+            dragStartHZoom = hZoom;
+            dragStartVZoom = vZoom;
+            e.preventDefault();
+            canvas.style.cursor = 'nwse-resize';
+            return;
+        }
+
+        if (e.button !== 0) return;
         const chartWidth = canvas.width - (LEFT_PADDING + RIGHT_PADDING);
         const mousePos = getMousePos(e);
         if (mousePos.x < LEFT_PADDING || mousePos.x > LEFT_PADDING + chartWidth) {
-            return; // Don't draw if outside the chart area
+            return;
         }
 
         if (editMode === 'freehand') {
             isDrawing = true;
             handleFreehandDraw(e); 
         } else if (editMode === 'line') {
-            handleLineDraw(e); // handleLineDraw manages its own state
+            handleLineDraw(e);
         }
     });
 
+    function endDrag() {
+        isPanning = false;
+        isZooming = false;
+        zoomDirection = 'none';
+        canvas.style.cursor = 'crosshair';
+    }
+
     canvas.addEventListener('mouseup', () => {
+        if (isPanning || isZooming) {
+            endDrag();
+        }
         if (editMode === 'freehand') {
             isDrawing = false;
             lastPoint = { x: -1, y: -1 };
@@ -377,6 +417,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     canvas.addEventListener('mouseleave', () => {
+        if (isPanning || isZooming) {
+            endDrag();
+        }
         if (editMode === 'freehand') {
             isDrawing = false;
             lastPoint = { x: -1, y: -1 };
@@ -384,16 +427,67 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     canvas.addEventListener('mousemove', (e) => {
+        if (isPanning) {
+            const currentPos = getMousePos(e);
+            const deltaX = currentPos.x - dragStartPos.x;
+            const deltaY = currentPos.y - dragStartPos.y;
+    
+            const chartWidth = canvas.clientWidth - (LEFT_PADDING + RIGHT_PADDING);
+            const pointsPerPixel = (WAVEFORM_POINTS / hZoom) / chartWidth;
+            const hOffsetChange = deltaX * pointsPerPixel;
+            
+            const newViewOffset = dragStartHOffset - hOffsetChange;
+            const visiblePoints = WAVEFORM_POINTS / hZoom;
+            const maxHOffset = Math.max(0, WAVEFORM_POINTS - visiblePoints);
+            viewOffset = Math.max(0, Math.min(maxHOffset, newViewOffset));
+    
+            const newVShift = dragStartVOffset + deltaY;
+            const chartHeight = canvas.clientHeight - (TOP_PADDING + BOTTOM_PADDING);
+            const maxPixelShift = (chartHeight / 2) * (vZoom - 1);
+            vShift = Math.max(-maxPixelShift, Math.min(maxPixelShift, newVShift));
+            
+            draw();
+            return;
+        }
+
+        if (isZooming) {
+            const currentPos = getMousePos(e);
+            const deltaX = currentPos.x - dragStartPos.x;
+            const deltaY = currentPos.y - dragStartPos.y;
+
+            if (zoomDirection === 'none' && (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5)) {
+                zoomDirection = Math.abs(deltaX) > Math.abs(deltaY) ? 'horizontal' : 'vertical';
+            }
+
+            if (zoomDirection === 'horizontal') {
+                canvas.style.cursor = 'ew-resize';
+                const zoomFactor = Math.pow(2, -deltaX / 200);
+                let newHZoom = dragStartHZoom * zoomFactor;
+                newHZoom = Math.max(parseFloat(hZoomSlider.min), Math.min(parseFloat(hZoomSlider.max), newHZoom));
+                hZoomSlider.value = newHZoom;
+                hZoomSlider.dispatchEvent(new Event('input'));
+            } else if (zoomDirection === 'vertical') {
+                canvas.style.cursor = 'ns-resize';
+                const zoomFactor = Math.pow(2, -deltaY / 200);
+                let newVZoom = dragStartVZoom * zoomFactor;
+                newVZoom = Math.max(parseFloat(vZoomSlider.min), Math.min(parseFloat(vZoomSlider.max), newVZoom));
+                vZoomSlider.value = newVZoom;
+                vZoomSlider.dispatchEvent(new Event('input'));
+            } else {
+                draw();
+            }
+            return;
+        }
+
         if (editMode === 'freehand') {
             handleFreehandDraw(e);
         }
-        // Line drawing doesn't need mousemove for drawing itself, only for visual feedback if implemented.
     });
 
     canvas.addEventListener('contextmenu', (e) => {
         if (editMode === 'line') {
-            e.preventDefault(); // Prevent the browser's context menu
-            lineStartPoint = null; // Clear the starting point
+            e.preventDefault();
+            lineStartPoint = null;
         }
     });
 
