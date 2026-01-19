@@ -103,143 +103,139 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.restore();
     }
 
+    function getNiceTickInterval(range, maxTicks) {
+        const roughInterval = range / maxTicks;
+        const exponent = Math.floor(Math.log10(roughInterval));
+        const powerOf10 = Math.pow(10, exponent);
+        const normalized = roughInterval / powerOf10;
+
+        if (normalized < 1.5) return powerOf10;
+        if (normalized < 3) return 2 * powerOf10;
+        if (normalized < 7) return 5 * powerOf10;
+        return 10 * powerOf10;
+    }
+
     function drawAxesAndGrid(chartWidth, chartHeight) {
         const axisColor = '#f0f0f0';
         const gridColor = '#444';
         const textColor = '#f0f0f0';
+        const vCenter = chartHeight / 2 + vShift;
+        const vScale = (chartHeight / 2) * vZoom;
         
         ctx.font = '12px sans-serif';
-        
+
         // --- Y-Axis and Horizontal Grid ---
-        const yMinorTickInterval = 5; // %
-        const yMajorTickInterval = 25; // %
-        const yRange = 200; // From 100% to -100%
-        const yTickCount = (yRange / yMinorTickInterval) + 1; // 40 intervals + 1 = 41 ticks
+        const valueTop = (vCenter - 0) / vScale;
+        const valueBottom = (vCenter - chartHeight) / vScale;
+        const visibleValueRange = valueTop - valueBottom;
+
+        // Target around 8-10 major grid lines
+        const yMajorTickInterval = getNiceTickInterval(visibleValueRange * 100, 8);
+        const yMinorTickInterval = yMajorTickInterval / 5;
+
+        const firstTick = Math.floor(valueBottom * 100 / yMinorTickInterval) * yMinorTickInterval;
+        const lastTick = Math.ceil(valueTop * 100 / yMinorTickInterval) * yMinorTickInterval;
 
         ctx.strokeStyle = axisColor;
         ctx.lineWidth = 1;
+        
+        for (let p = firstTick; p <= lastTick; p += yMinorTickInterval) {
+            const pRounded = parseFloat(p.toPrecision(10));
+            if (pRounded > valueTop * 100 || pRounded < valueBottom * 100) continue;
 
-        // Left Y-Axis (labeled)
-        ctx.beginPath();
-        ctx.moveTo(LEFT_PADDING, TOP_PADDING);
-        ctx.lineTo(LEFT_PADDING, TOP_PADDING + chartHeight);
-        ctx.stroke();
+            const value = pRounded / 100;
+            const y = TOP_PADDING + vCenter - (value * vScale);
 
-        // Center Y-Axis (unlabeled)
-        ctx.beginPath();
-        ctx.moveTo(LEFT_PADDING + chartWidth / 2, TOP_PADDING);
-        ctx.lineTo(LEFT_PADDING + chartWidth / 2, TOP_PADDING + chartHeight);
-        ctx.stroke();
+            const isMajorTick = Math.abs(pRounded % yMajorTickInterval) < 1e-9 || Math.abs(pRounded - yMajorTickInterval) % yMajorTickInterval < 1e-9;
 
-        // Right Y-Axis (unlabeled)
-        ctx.beginPath();
-        ctx.moveTo(LEFT_PADDING + chartWidth, TOP_PADDING);
-        ctx.lineTo(LEFT_PADDING + chartWidth, TOP_PADDING + chartHeight);
-        ctx.stroke();
-
-        for (let i = 0; i < yTickCount; i++) {
-            const y = TOP_PADDING + (i / (yTickCount - 1)) * chartHeight + vShift; // Y-position now offset by TOP_PADDING
-            const percentage = 100 - (i * yMinorTickInterval); // From 100 down to -100
-
-            // Draw Tick on Left Y-Axis (inner side)
             ctx.beginPath();
             ctx.moveTo(LEFT_PADDING, y);
-            ctx.lineTo(LEFT_PADDING + 5, y);
+            ctx.lineTo(LEFT_PADDING + (isMajorTick ? 8 : 5), y);
             ctx.stroke();
 
-            // Draw Tick on Center Y-Axis (both sides)
             ctx.beginPath();
-            ctx.moveTo(LEFT_PADDING + chartWidth / 2 - 5, y);
-            ctx.lineTo(LEFT_PADDING + chartWidth / 2 + 5, y);
-            ctx.stroke();
-
-            // Draw Tick on Right Y-Axis (inner side)
-            ctx.beginPath();
-            ctx.moveTo(LEFT_PADDING + chartWidth - 5, y);
+            ctx.moveTo(LEFT_PADDING + chartWidth - (isMajorTick ? 8 : 5), y);
             ctx.lineTo(LEFT_PADDING + chartWidth, y);
             ctx.stroke();
 
-            // Draw Grid Line (as dots) and Label for major ticks
-            if (percentage % yMajorTickInterval === 0) { // Major ticks every 25%
+            if (isMajorTick) {
                 ctx.fillStyle = gridColor;
-                const xTickCount = yTickCount; // Same amount of ticks as Y-axis (41)
-                for (let j = 0; j < xTickCount; j++) {
-                    const x = LEFT_PADDING + (j / (xTickCount - 1)) * chartWidth;
-                    ctx.fillRect(x - 1, y - 1, 2, 2); // Draw a dot
+                for (let j = 0; j <= 40; j++) {
+                    const x = LEFT_PADDING + (j / 40) * chartWidth;
+                    ctx.fillRect(x - 1, y - 1, 2, 2);
                 }
                 
                 ctx.fillStyle = textColor;
                 ctx.textAlign = 'right';
                 ctx.textBaseline = 'middle';
-                let displayPercentage = Number.parseFloat((percentage / vZoom).toFixed(2));
-                ctx.fillText(`${displayPercentage}%`, LEFT_PADDING - 10, y); // Label relative to LEFT_PADDING
+                ctx.fillText(`${pRounded}%`, LEFT_PADDING - 10, y);
             }
-            ctx.strokeStyle = axisColor; // Reset for minor ticks
         }
+
+        // --- Fixed Frame Axes ---
+        ctx.beginPath();
+        ctx.moveTo(LEFT_PADDING, TOP_PADDING);
+        ctx.lineTo(LEFT_PADDING, TOP_PADDING + chartHeight);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(LEFT_PADDING + chartWidth, TOP_PADDING);
+        ctx.lineTo(LEFT_PADDING + chartWidth, TOP_PADDING + chartHeight);
+        ctx.stroke();
         
         // --- X-Axis and Vertical Grid ---
-        const xMajorTickInterval = 5; // Every 5th minor tick
-        const xTickCount = yTickCount; // Same amount of ticks as Y-axis (41)
+        const xMajorTickInterval = 5;
+        const xTickCount = 41;
         
         ctx.strokeStyle = axisColor;
 
-        // Top X-Axis
         ctx.beginPath();
         ctx.moveTo(LEFT_PADDING, TOP_PADDING);
         ctx.lineTo(LEFT_PADDING + chartWidth, TOP_PADDING);
         ctx.stroke();
 
-        // Center X-Axis
         ctx.beginPath();
-        ctx.moveTo(LEFT_PADDING, TOP_PADDING + chartHeight / 2 + vShift);
-        ctx.lineTo(LEFT_PADDING + chartWidth, TOP_PADDING + chartHeight / 2 + vShift);
+        ctx.moveTo(LEFT_PADDING, TOP_PADDING + vCenter);
+        ctx.lineTo(LEFT_PADDING + chartWidth, TOP_PADDING + vCenter);
         ctx.stroke();
 
-        // Bottom X-Axis
         ctx.beginPath();
         ctx.moveTo(LEFT_PADDING, TOP_PADDING + chartHeight);
         ctx.lineTo(LEFT_PADDING + chartWidth, TOP_PADDING + chartHeight);
         ctx.stroke();
 
         for (let i = 0; i < xTickCount; i++) {
-            const x = LEFT_PADDING + (i / (xTickCount - 1)) * chartWidth; // Position relative to chartWidth
+            const x = LEFT_PADDING + (i / (xTickCount - 1)) * chartWidth;
             
             const visiblePoints = WAVEFORM_POINTS / hZoom;
             const pointValue = Math.round(viewOffset + (i / (xTickCount - 1)) * visiblePoints);
             const clampedPointValue = Math.min(pointValue, WAVEFORM_POINTS - 1);
 
-            // Draw Tick on Top X-Axis (inner side)
             ctx.beginPath();
             ctx.moveTo(x, TOP_PADDING);
-            ctx.lineTo(x, TOP_PADDING + (i % xMajorTickInterval === 0 ? 8 : 5)); // Longer for major ticks
+            ctx.lineTo(x, TOP_PADDING + 5);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(x, TOP_PADDING + vCenter - 5);
+            ctx.lineTo(x, TOP_PADDING + vCenter + 5);
             ctx.stroke();
 
-            // Draw Tick on central X-Axis (both sides)
             ctx.beginPath();
-            ctx.moveTo(x, TOP_PADDING + chartHeight / 2 + vShift - (i % xMajorTickInterval === 0 ? 8 : 5)); // Longer for major ticks
-            ctx.lineTo(x, TOP_PADDING + chartHeight / 2 + vShift + (i % xMajorTickInterval === 0 ? 8 : 5)); // Longer for major ticks
-            ctx.stroke();
-
-            // Draw Tick on Bottom X-Axis (inner side)
-            ctx.beginPath();
-            ctx.moveTo(x, TOP_PADDING + chartHeight - (i % xMajorTickInterval === 0 ? 8 : 5)); // Longer for major ticks
+            ctx.moveTo(x, TOP_PADDING + chartHeight - 5);
             ctx.lineTo(x, TOP_PADDING + chartHeight);
             ctx.stroke();
 
-            // Draw Grid Line (as dots) and Label for major ticks
-            if (i % xMajorTickInterval === 0) { // Major ticks every 5th minor tick
+            if (i % xMajorTickInterval === 0) {
                 ctx.fillStyle = gridColor;
-                const yTickCountForGrid = xTickCount;
-                for (let j = 0; j < yTickCountForGrid; j++) {
-                    const y = TOP_PADDING + (j / (yTickCountForGrid - 1)) * chartHeight;
-                    ctx.fillRect(x - 1, y - 1, 2, 2); // Draw a dot
+                for (let j = 0; j <= 40; j++) {
+                    const y = TOP_PADDING + (j / 40) * chartHeight;
+                    ctx.fillRect(x - 1, y - 1, 2, 2);
                 }
                 ctx.fillStyle = textColor;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
-                ctx.fillText(clampedPointValue, x, TOP_PADDING + chartHeight + 10); // Label below BOTTOM X-axis
+                ctx.fillText(clampedPointValue, x, TOP_PADDING + chartHeight + 10);
             }
-            ctx.strokeStyle = axisColor; // Reset for minor ticks
         }
     }
 
@@ -419,15 +415,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     shiftUpBtn.addEventListener("click", () => {
-        // canvas.clientHeight;
-        const chartHeight = canvas.height - (TOP_PADDING + BOTTOM_PADDING);
-        vShift -= Math.max(1, Math.floor(chartHeight / 38));
+        const chartHeight = canvas.clientHeight - (TOP_PADDING + BOTTOM_PADDING);
+        const shiftAmount = Math.max(1, Math.floor(chartHeight / 38));
+        const maxPixelShift = (chartHeight / 2) * (vZoom - 1);
+        vShift = Math.max(-maxPixelShift, vShift - shiftAmount);
         draw();
     });
   
     shiftDownBtn.addEventListener("click", () => {
-        const chartHeight = canvas.height - (TOP_PADDING + BOTTOM_PADDING);
-        vShift += Math.max(1, Math.floor(chartHeight / 38));
+        const chartHeight = canvas.clientHeight - (TOP_PADDING + BOTTOM_PADDING);
+        const shiftAmount = Math.max(1, Math.floor(chartHeight / 38));
+        const maxPixelShift = (chartHeight / 2) * (vZoom - 1);
+        vShift = Math.min(maxPixelShift, vShift + shiftAmount);
         draw();
     });
     
@@ -452,6 +451,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     vZoomSlider.addEventListener('input', (e) => {
         vZoom = parseFloat(e.target.value);
+        const chartHeight = canvas.clientHeight - (TOP_PADDING + BOTTOM_PADDING);
+        const maxPixelShift = (chartHeight / 2) * (vZoom - 1);
+        vShift = Math.max(-maxPixelShift, Math.min(maxPixelShift, vShift));
         draw();
     });
 
