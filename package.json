@@ -1,6 +1,7 @@
 {
-  "name": "waveform",
+  "name": "oscillo-forge",
   "version": "1.0.0",
+  "productName": "OscilloForge",
   "description": "",
   "main": "main.js",
   "scripts": {
