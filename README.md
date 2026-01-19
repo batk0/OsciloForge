@@ -1,7 +1,6 @@
 # OscilloForge
 
-![OscilloForge Screenshot](placeholder.png)
-*(Feel free to replace `placeholder.png` with a screenshot of the application)*
+![OscilloForge Screenshot](OsciloForge.png)
 
 ## Overview
 
