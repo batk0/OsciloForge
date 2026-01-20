@@ -1,5 +1,22 @@
 import { generateSineWave, generateSquareWave, generateTriangleWave } from './src/js/waveform-generator.js';
 
+export function getNiceTickInterval(range, maxTicks) {
+    const roughInterval = range / maxTicks;
+    const p = Math.floor(Math.log10(roughInterval));
+    const p10 = Math.pow(10, p);
+    let v = roughInterval / p10; // Normalized between 1 and 10
+
+    let niceV;
+    if (v < 1.5) niceV = 1;
+    else if (v < 2.2) niceV = 2;
+    else if (v < 3.5) niceV = 2.5; // Corrected to use 2.5 as a nice interval
+    else if (v < 7.5) niceV = 5;
+    else niceV = 10;
+
+    return niceV * p10;
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('waveform-canvas');
     const ctx = canvas.getContext('2d');
@@ -113,18 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         ctx.restore();
-    }
-
-    function getNiceTickInterval(range, maxTicks) {
-        const roughInterval = range / maxTicks;
-        const exponent = Math.floor(Math.log10(roughInterval));
-        const powerOf10 = Math.pow(10, exponent);
-        const normalized = roughInterval / powerOf10;
-
-        if (normalized < 1.5) return powerOf10;
-        if (normalized < 3) return 2 * powerOf10;
-        if (normalized < 7) return 5 * powerOf10;
-        return 10 * powerOf10;
     }
 
     function drawAxesAndGrid(chartWidth, chartHeight) {
