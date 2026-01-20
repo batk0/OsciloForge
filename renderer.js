@@ -258,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Mouse Editing ---
 
-    function getMousePos(evt) {
+    export function getMousePos(evt, canvas) {
         const rect = canvas.getBoundingClientRect();
         return {
             x: evt.clientX - rect.left,
@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const chartWidth = canvas.width - (LEFT_PADDING + RIGHT_PADDING);
         const chartHeight = canvas.height - (TOP_PADDING + BOTTOM_PADDING);
-        const mousePos = getMousePos(event);
+        const mousePos = getMousePos(event, canvas);
 
         const visiblePoints = WAVEFORM_POINTS / hZoom;
         const localXScale = chartWidth / visiblePoints;
@@ -310,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleLineDraw(event) {
         const chartWidth = canvas.width - (LEFT_PADDING + RIGHT_PADDING);
         const chartHeight = canvas.height - (TOP_PADDING + BOTTOM_PADDING);
-        const mousePos = getMousePos(event);
+        const mousePos = getMousePos(event, canvas);
 
         const visiblePoints = WAVEFORM_POINTS / hZoom;
         const localXScale = chartWidth / visiblePoints;
@@ -346,7 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.addEventListener('mousedown', (e) => {
         if (e.shiftKey) {
             isPanning = true;
-            dragStartPos = getMousePos(e);
+            dragStartPos = getMousePos(e, canvas);
             dragStartHOffset = viewOffset;
             dragStartVOffset = vShift;
             e.preventDefault();
@@ -356,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.metaKey || e.ctrlKey) {
             isZooming = true;
             zoomDirection = 'none';
-            dragStartPos = getMousePos(e);
+            dragStartPos = getMousePos(e, canvas);
             dragStartHZoom = hZoom;
             dragStartVZoom = vZoom;
             e.preventDefault();
@@ -366,7 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (e.button !== 0) return;
         const chartWidth = canvas.width - (LEFT_PADDING + RIGHT_PADDING);
-        const mousePos = getMousePos(e);
+        const mousePos = getMousePos(e, canvas);
         if (mousePos.x < LEFT_PADDING || mousePos.x > LEFT_PADDING + chartWidth) {
             return;
         }
@@ -408,7 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     canvas.addEventListener('mousemove', (e) => {
         if (isPanning) {
-            const currentPos = getMousePos(e);
+            const currentPos = getMousePos(e, canvas);
             const deltaX = currentPos.x - dragStartPos.x;
             const deltaY = currentPos.y - dragStartPos.y;
     
@@ -431,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (isZooming) {
-            const currentPos = getMousePos(e);
+            const currentPos = getMousePos(e, canvas);
             const deltaX = currentPos.x - dragStartPos.x;
             const deltaY = currentPos.y - dragStartPos.y;
 
