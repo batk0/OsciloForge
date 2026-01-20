@@ -17,5 +17,8 @@
     "electron": "^39.2.7",
     "jsdom": "^27.4.0",
     "vitest": "^4.0.17"
+  },
+  "dependencies": {
+    "canvas": "^3.2.1"
   }
 }
