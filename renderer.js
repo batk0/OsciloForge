@@ -1,3 +1,5 @@
+import { generateSineWave, generateSquareWave, generateTriangleWave } from './src/js/waveform-generator.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('waveform-canvas');
     const ctx = canvas.getContext('2d');
@@ -245,33 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
                 ctx.fillText(clampedPointValue, x, TOP_PADDING + chartHeight + 10);
-            }
-        }
-    }
-
-    function generateSineWave(amplitude, cycles) {
-        for (let i = 0; i < WAVEFORM_POINTS; i++) {
-            waveformData[i] = amplitude * Math.sin(2 * Math.PI * cycles * (i / WAVEFORM_POINTS));
-        }
-    }
-
-    function generateSquareWave(amplitude, cycles, dutyCycle) {
-        const periodPoints = WAVEFORM_POINTS / cycles;
-        const dutyPoints = periodPoints * (dutyCycle / 100);
-        for (let i = 0; i < WAVEFORM_POINTS; i++) {
-            const phaseInPeriod = i % periodPoints;
-            waveformData[i] = phaseInPeriod < dutyPoints ? amplitude : -amplitude;
-        }
-    }
-
-    function generateTriangleWave(amplitude, cycles) {
-        const periodPoints = WAVEFORM_POINTS / cycles;
-        for (let i = 0; i < WAVEFORM_POINTS; i++) {
-            const phaseInPeriod = i % periodPoints;
-            if (phaseInPeriod < periodPoints / 2) {
-                waveformData[i] = amplitude * (2 * (phaseInPeriod / (periodPoints / 2)) - 1);
-            } else {
-                waveformData[i] = amplitude * (1 - 2 * ((phaseInPeriod - periodPoints / 2) / (periodPoints / 2)));
             }
         }
     }
@@ -636,20 +611,22 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        let newWaveformData;
         switch (type) {
             case 'sine':
-                generateSineWave(amplitude, cycles);
+                newWaveformData = generateSineWave(amplitude, cycles, WAVEFORM_POINTS);
                 break;
             case 'square':
-                generateSquareWave(amplitude, cycles, dutyCycle);
+                newWaveformData = generateSquareWave(amplitude, cycles, dutyCycle, WAVEFORM_POINTS);
                 break;
             case 'triangle':
-                generateTriangleWave(amplitude, cycles);
+                newWaveformData = generateTriangleWave(amplitude, cycles, WAVEFORM_POINTS);
                 break;
             default:
                 console.error('Unknown waveform type:', type);
                 return;
         }
+        waveformData.set(newWaveformData);
         lastLoadedWaveformData = new Float32Array(waveformData);
         draw();
     });
