@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
 import { CanvasDrawer } from '../src/js/canvas-drawer.js';
+import { WAVEFORM_POINTS } from '../src/js/state.js';
 
 // Mock getNiceTickInterval
 vi.mock('../src/js/utils.js', () => ({
@@ -24,7 +25,7 @@ describe('CanvasDrawer', () => {
         Object.defineProperty(canvas, 'clientWidth', { value: 800, configurable: true });
         Object.defineProperty(canvas, 'clientHeight', { value: 600, configurable: true });
         
-        drawer = new CanvasDrawer(canvas, { WAVEFORM_POINTS: 4096 });
+        drawer = new CanvasDrawer(canvas);
     });
 
     it('should be instantiated', () => {
@@ -38,7 +39,7 @@ describe('CanvasDrawer', () => {
 
     it('draw function should not throw an error with default state', () => {
         const state = {
-            waveformData: new Float32Array(4096).fill(0),
+            waveformData: new Float32Array(WAVEFORM_POINTS).fill(0),
             hZoom: 1,
             vZoom: 1,
             viewOffset: 0,
@@ -50,7 +51,7 @@ describe('CanvasDrawer', () => {
 
     it('should call clearRect on draw', () => {
         const state = {
-            waveformData: new Float32Array(4096).fill(0), hZoom: 1, vZoom: 1, viewOffset: 0, vShift: 0, drawStyle: 'line'
+            waveformData: new Float32Array(WAVEFORM_POINTS).fill(0), hZoom: 1, vZoom: 1, viewOffset: 0, vShift: 0, drawStyle: 'line'
         };
         const clearRectSpy = vi.spyOn(drawer.ctx, 'clearRect');
         drawer.draw(state);
@@ -62,10 +63,50 @@ describe('CanvasDrawer', () => {
         Object.defineProperty(canvas, 'clientWidth', { value: 50, configurable: true });
         Object.defineProperty(canvas, 'clientHeight', { value: 50, configurable: true });
          const state = {
-            waveformData: new Float32Array(4096).fill(0), hZoom: 1, vZoom: 1, viewOffset: 0, vShift: 0, drawStyle: 'line'
+            waveformData: new Float32Array(WAVEFORM_POINTS).fill(0), hZoom: 1, vZoom: 1, viewOffset: 0, vShift: 0, drawStyle: 'line'
         };
         const clearRectSpy = vi.spyOn(drawer.ctx, 'clearRect');
         drawer.draw(state);
         expect(clearRectSpy).not.toHaveBeenCalled();
+    });
+
+    it('should handle dots drawing style', () => {
+        const state = {
+            waveformData: new Float32Array(WAVEFORM_POINTS).fill(0.5), 
+            hZoom: 1, 
+            vZoom: 1, 
+            viewOffset: 0, 
+            vShift: 0, 
+            drawStyle: 'dots'
+        };
+        const fillRectSpy = vi.spyOn(drawer.ctx, 'fillRect');
+        drawer.draw(state);
+        expect(fillRectSpy).toHaveBeenCalled();
+    });
+
+    it('should handle zoom and pan parameters correctly', () => {
+        const state = {
+            waveformData: new Float32Array(WAVEFORM_POINTS).fill(0.25), 
+            hZoom: 2, 
+            vZoom: 1.5, 
+            viewOffset: 100, 
+            vShift: -0.1, 
+            drawStyle: 'line'
+        };
+        const clearRectSpy = vi.spyOn(drawer.ctx, 'clearRect');
+        expect(() => drawer.draw(state)).not.toThrow();
+        expect(clearRectSpy).toHaveBeenCalled();
+    });
+
+    it('should handle empty waveformData', () => {
+        const state = {
+            waveformData: new Float32Array(WAVEFORM_POINTS).fill(0), 
+            hZoom: 1, 
+            vZoom: 1, 
+            viewOffset: 0, 
+            vShift: 0, 
+            drawStyle: 'line'
+        };
+        expect(() => drawer.draw(state)).not.toThrow();
     });
 });

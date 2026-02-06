@@ -1,4 +1,5 @@
 import { getMousePos } from './utils.js';
+import { WAVEFORM_POINTS, TOP_PADDING, RIGHT_PADDING, BOTTOM_PADDING, LEFT_PADDING } from './state.js';
 
 export class MouseHandler {
     constructor(canvas, state, hooks) {
@@ -8,7 +9,7 @@ export class MouseHandler {
 
         this.isDrawing = false;
         this.lastPoint = { x: -1, y: -1 };
-        this.lineStartPoint = null;
+        // this.lineStartPoint is now managed in state.js
 
         // Mouse pan/zoom state
         this.isPanning = false;
@@ -19,12 +20,6 @@ export class MouseHandler {
         this.dragStartVOffset = 0;
         this.dragStartHZoom = 1;
         this.dragStartVZoom = 1;
-        
-        this.WAVEFORM_POINTS = state.WAVEFORM_POINTS;
-        this.TOP_PADDING = state.TOP_PADDING;
-        this.RIGHT_PADDING = state.RIGHT_PADDING;
-        this.BOTTOM_PADDING = state.BOTTOM_PADDING;
-        this.LEFT_PADDING = state.LEFT_PADDING;
 
         this.init();
     }
@@ -59,9 +54,9 @@ export class MouseHandler {
         }
 
         if (e.button !== 0) return;
-        const chartWidth = this.canvas.width - (this.LEFT_PADDING + this.RIGHT_PADDING);
+        const chartWidth = this.canvas.width - (LEFT_PADDING + RIGHT_PADDING);
         const mousePos = getMousePos(e, this.canvas);
-        if (mousePos.x < this.LEFT_PADDING || mousePos.x > this.LEFT_PADDING + chartWidth) {
+        if (mousePos.x < LEFT_PADDING || mousePos.x > LEFT_PADDING + chartWidth) {
             return;
         }
 
@@ -99,8 +94,8 @@ export class MouseHandler {
             const deltaX = currentPos.x - this.dragStartPos.x;
             const deltaY = currentPos.y - this.dragStartPos.y;
     
-            const chartWidth = this.canvas.clientWidth - (this.LEFT_PADDING + this.RIGHT_PADDING);
-            const pointsPerPixel = (this.WAVEFORM_POINTS / this.state.hZoom) / chartWidth;
+            const chartWidth = this.canvas.clientWidth - (LEFT_PADDING + RIGHT_PADDING);
+            const pointsPerPixel = (WAVEFORM_POINTS / this.state.hZoom) / chartWidth;
             const hOffsetChange = deltaX * pointsPerPixel;
             
             const newViewOffset = this.dragStartHOffset - hOffsetChange;
@@ -146,7 +141,7 @@ export class MouseHandler {
     handleContextMenu(e) {
         if (this.state.editMode === 'line') {
             e.preventDefault();
-            this.lineStartPoint = null;
+            this.hooks.updateState({ lineStartPoint: null });
         }
     }
 
@@ -160,38 +155,44 @@ export class MouseHandler {
     handleFreehandDraw(event) {
         if (!this.isDrawing) return;
         
-        const chartWidth = this.canvas.width - (this.LEFT_PADDING + this.RIGHT_PADDING);
-        const chartHeight = this.canvas.height - (this.TOP_PADDING + this.BOTTOM_PADDING);
+        const chartWidth = this.canvas.width - (LEFT_PADDING + RIGHT_PADDING);
+        const chartHeight = this.canvas.height - (TOP_PADDING + BOTTOM_PADDING);
         const mousePos = getMousePos(event, this.canvas);
 
-        const visiblePoints = this.WAVEFORM_POINTS / this.state.hZoom;
+        const visiblePoints = WAVEFORM_POINTS / this.state.hZoom;
         const localXScale = chartWidth / visiblePoints;
         
-        const dataIndexFloat = (mousePos.x - this.LEFT_PADDING) / localXScale + this.state.viewOffset;
+        const dataIndexFloat = (mousePos.x - LEFT_PADDING) / localXScale + this.state.viewOffset;
         const currentPointX = Math.floor(dataIndexFloat);
 
-        if (currentPointX >= 0 && currentPointX < this.WAVEFORM_POINTS) {
+        if (currentPointX >= 0 && currentPointX < WAVEFORM_POINTS) {
             const vCenter = chartHeight / 2 + this.state.vShift;
             const vScale = (chartHeight / 2) * this.state.vZoom;
-            let value = (vCenter - (mousePos.y - this.TOP_PADDING)) / vScale;
+            let value = (vCenter - (mousePos.y - TOP_PADDING)) / vScale;
             value = Math.max(-1.0, Math.min(1.0, value));
+
+            // Create updated waveformData array using proper state management
+            const updatedWaveformData = new Float32Array(this.state.waveformData);
 
             if (this.lastPoint.x !== -1 && this.lastPoint.x !== currentPointX) {
                 const startX = Math.min(this.lastPoint.x, currentPointX);
                 const endX = Math.max(this.lastPoint.x, currentPointX);
                 const startY = (this.lastPoint.x < currentPointX) ? this.lastPoint.y : value;
-                const endY = (this.lastPoint.x < currentPointX) ? value : lastPoint.y;
+                const endY = (this.lastPoint.x < currentPointX) ? value : this.lastPoint.y;
                 for (let i = startX; i <= endX; i++) {
-                    if (i >= 0 && i < this.state.waveformData.length) {
+                    if (i >= 0 && i < updatedWaveformData.length) {
                        const t = (endX - startX === 0) ? 1.0 : (i - startX) / (endX - startX);
-                       this.state.waveformData[i] = startY + t * (endY - startY);
+                       updatedWaveformData[i] = startY + t * (endY - startY);
                     }
                 }
             } else {
-                 if (currentPointX >= 0 && currentPointX < this.state.waveformData.length) {
-                    this.state.waveformData[currentPointX] = value;
+                 if (currentPointX >= 0 && currentPointX < updatedWaveformData.length) {
+                    updatedWaveformData[currentPointX] = value;
                 }
             }
+            
+            // Update state using centralized state management
+            this.hooks.updateState({ waveformData: updatedWaveformData });
             
             this.lastPoint = { x: currentPointX, y: value };
             this.hooks.draw();
@@ -199,36 +200,47 @@ export class MouseHandler {
     }
 
     handleLineDraw(event) {
-        const chartWidth = this.canvas.width - (this.LEFT_PADDING + this.RIGHT_PADDING);
-        const chartHeight = this.canvas.height - (this.TOP_PADDING + this.BOTTOM_PADDING);
+        const chartWidth = this.canvas.width - (LEFT_PADDING + RIGHT_PADDING);
+        const chartHeight = this.canvas.height - (TOP_PADDING + BOTTOM_PADDING);
         const mousePos = getMousePos(event, this.canvas);
 
-        const visiblePoints = this.WAVEFORM_POINTS / this.state.hZoom;
+        const visiblePoints = WAVEFORM_POINTS / this.state.hZoom;
         const localXScale = chartWidth / visiblePoints;
         
-        const dataIndexFloat = (mousePos.x - this.LEFT_PADDING) / localXScale + this.state.viewOffset;
+        const dataIndexFloat = (mousePos.x - LEFT_PADDING) / localXScale + this.state.viewOffset;
         const currentPointX = Math.floor(dataIndexFloat);
 
-        if (currentPointX >= 0 && currentPointX < this.WAVEFORM_POINTS) {
+        if (currentPointX >= 0 && currentPointX < WAVEFORM_POINTS) {
             const vCenter = chartHeight / 2 + this.state.vShift;
             const vScale = (chartHeight / 2) * this.state.vZoom;
-            let value = (vCenter - (mousePos.y - this.TOP_PADDING)) / vScale;
+            let value = (vCenter - (mousePos.y - TOP_PADDING)) / vScale;
             value = Math.max(-1.0, Math.min(1.0, value));
 
-            if (!this.lineStartPoint) {
-                this.lineStartPoint = { x: currentPointX, y: value };
+            if (!this.state.lineStartPoint) {
+                this.hooks.updateState({ lineStartPoint: { x: currentPointX, y: value } });
             } else {
-                const startX = Math.min(this.lineStartPoint.x, currentPointX);
-                const endX = Math.max(this.lineStartPoint.x, currentPointX);
-                const startY_val = (this.lineStartPoint.x < currentPointX) ? this.lineStartPoint.y : value;
-                const endY_val = (this.lineStartPoint.x < currentPointX) ? value : this.lineStartPoint.y;
+                // Create updated waveformData array using proper state management
+                const updatedWaveformData = new Float32Array(this.state.waveformData);
+                
+                const startPoint = this.state.lineStartPoint;
+                const startX = Math.min(startPoint.x, currentPointX);
+                const endX = Math.max(startPoint.x, currentPointX);
+                const startY_val = (startPoint.x < currentPointX) ? startPoint.y : value;
+                const endY_val = (startPoint.x < currentPointX) ? value : startPoint.y;
                 for (let i = startX; i <= endX; i++) {
-                     if (i >= 0 && i < this.state.waveformData.length) {
+                     if (i >= 0 && i < updatedWaveformData.length) {
                         const t = (endX - startX === 0) ? 1.0 : (i - startX) / (endX - startX);
-                        this.state.waveformData[i] = startY_val + t * (endY_val - startY_val);
+                        updatedWaveformData[i] = startY_val + t * (endY_val - startY_val);
                     }
                 }
-                this.lineStartPoint = null; // End line after drawing
+                
+                // Update state using centralized state management
+                // Update lineStartPoint to the current point to enable continuous drawing
+                this.hooks.updateState({ 
+                    waveformData: updatedWaveformData,
+                    lineStartPoint: { x: currentPointX, y: value }
+                });
+                
                 this.hooks.draw();
             }
         }
@@ -236,7 +248,7 @@ export class MouseHandler {
 
     setEditMode(mode) {
         this.state.editMode = mode;
-        this.lineStartPoint = null;
+        this.hooks.updateState({ lineStartPoint: null });
         this.isDrawing = false;
         this.lastPoint = { x: -1, y: -1 };
     }

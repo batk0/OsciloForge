@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { generateSineWave, generateSquareWave, generateTriangleWave } from '../src/js/waveform-generator';
+import { WAVEFORM_POINTS } from '../src/js/state.js';
 
 describe('Waveform Generator', () => {
     it('generateSineWave should return a Float32Array of correct length with sine wave data', () => {
         const amplitude = 0.5;
         const cycles = 2;
-        const WAVEFORM_POINTS = 4096;
 
         const result = generateSineWave(amplitude, cycles, WAVEFORM_POINTS);
 
@@ -27,7 +27,6 @@ describe('Waveform Generator', () => {
         const amplitude = 0.8;
         const cycles = 1;
         const dutyCycle = 50;
-        const WAVEFORM_POINTS = 4096;
 
         const result = generateSquareWave(amplitude, cycles, dutyCycle, WAVEFORM_POINTS);
 
@@ -44,7 +43,6 @@ describe('Waveform Generator', () => {
     it('generateTriangleWave should return a Float32Array of correct length with triangle wave data', () => {
         const amplitude = 1.0;
         const cycles = 1;
-        const WAVEFORM_POINTS = 4096;
 
         const result = generateTriangleWave(amplitude, cycles, WAVEFORM_POINTS);
 
