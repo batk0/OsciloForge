@@ -2,9 +2,15 @@
 .zed
 *.arb
 *.csv
-*.md
 *.txt
 *.pdf
+
+# Generated markdown files only (keep README.md, CONTRIBUTING.md, CHANGELOG.md)
+/docs/**/*.md
+SUMMARY.md
+API.md
+AGENTS.md
+GEMINI.md
 
 node_modules
 coverage

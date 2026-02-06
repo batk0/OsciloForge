@@ -33,7 +33,6 @@ Thumbs.db
 
 # Documentation and examples (optional - adjust as needed)
 docs/
-spec/
 
 # CI/CD
 .github/

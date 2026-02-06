@@ -6,6 +6,13 @@ import { state, updateState } from './api/state.js';
 document.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('waveform-canvas');
 
+  // Validate canvas element exists
+  if (!canvas) {
+    // eslint-disable-next-line no-console
+    console.error('Canvas element with id "waveform-canvas" not found');
+    return;
+  }
+
   // Initialize core components
   const canvasDrawer = new CanvasDrawer(canvas);
 

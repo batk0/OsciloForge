@@ -88,7 +88,7 @@ export class UIManager {
       }
       const chartHeight = this.canvas.clientHeight - (TOP_PADDING + BOTTOM_PADDING);
       const shiftAmount = Math.max(1, Math.floor(chartHeight / 38));
-      const maxPixelShift = (chartHeight / 2) * (this.state.vZoom - 1);
+      const maxPixelShift = (chartHeight / 2) * Math.abs(this.state.vZoom - 1);
       this.updateState({ vShift: Math.max(-maxPixelShift, this.state.vShift - shiftAmount) });
       this.draw();
     });
@@ -99,7 +99,7 @@ export class UIManager {
       }
       const chartHeight = this.canvas.clientHeight - (TOP_PADDING + BOTTOM_PADDING);
       const shiftAmount = Math.max(1, Math.floor(chartHeight / 38));
-      const maxPixelShift = (chartHeight / 2) * (this.state.vZoom - 1);
+      const maxPixelShift = (chartHeight / 2) * Math.abs(this.state.vZoom - 1);
       this.updateState({ vShift: Math.min(maxPixelShift, this.state.vShift + shiftAmount) });
       this.draw();
     });
@@ -134,7 +134,7 @@ export class UIManager {
       }
       const newVZoom = parseFloat(e.target.value);
       const chartHeight = this.canvas.clientHeight - (TOP_PADDING + BOTTOM_PADDING);
-      const maxPixelShift = (chartHeight / 2) * (newVZoom - 1);
+      const maxPixelShift = (chartHeight / 2) * Math.abs(newVZoom - 1);
       this.updateState({
         vZoom: newVZoom,
         vShift: Math.max(-maxPixelShift, Math.min(maxPixelShift, this.state.vShift))
@@ -293,7 +293,13 @@ export class UIManager {
   }
 
   initializeEditMode() {
-    this.updateState({ editMode: document.querySelector('input[name="edit-mode"]:checked').value });
+    const editModeRadio = document.querySelector('input[name="edit-mode"]:checked');
+    if (editModeRadio && editModeRadio.value) {
+      this.updateState({ editMode: editModeRadio.value });
+    } else {
+      // Fallback to 'freehand' if no radio is checked
+      this.updateState({ editMode: 'freehand' });
+    }
   }
 
   initialize() {
@@ -319,7 +325,7 @@ export class UIManager {
             return;
           }
           const chartHeight = this.canvas.clientHeight - (TOP_PADDING + BOTTOM_PADDING);
-          const maxPixelShift = (chartHeight / 2) * (this.state.vZoom - 1);
+          const maxPixelShift = (chartHeight / 2) * Math.abs(this.state.vZoom - 1);
           const clampedShift = Math.max(-maxPixelShift, Math.min(maxPixelShift, newState.vShift));
           updates.vShift = clampedShift;
         }
