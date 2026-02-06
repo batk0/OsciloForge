@@ -6,7 +6,9 @@
   "main": "src/main/index.js",
   "scripts": {
     "start": "electron .",
-    "test": "vitest"
+    "test": "vitest",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +17,7 @@
   "devDependencies": {
     "@vitest/coverage-v8": "^4.0.17",
     "electron": "^39.2.7",
+    "eslint": "^8.57.1",
     "jsdom": "^27.4.0",
     "vitest": "^4.0.17"
   },
