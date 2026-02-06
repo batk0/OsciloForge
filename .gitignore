@@ -1,6 +1,10 @@
 .DS_Store
+.zed
 *.arb
 *.csv
+*.md
+*.txt
+*.pdf
 
 node_modules
 coverage
