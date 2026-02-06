@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { generateSineWave, generateSquareWave, generateTriangleWave } from '../src/js/waveform-generator';
-import { WAVEFORM_POINTS } from '../src/js/state.js';
+import { generateSineWave, generateSquareWave, generateTriangleWave } from '../src/renderer/api/waveform-generator';
+import { WAVEFORM_POINTS } from '../src/renderer/api/state.js';
 
 describe('Waveform Generator', () => {
     it('generateSineWave should return a Float32Array of correct length with sine wave data', () => {

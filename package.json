@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "productName": "OscilloForge",
   "description": "",
-  "main": "main.js",
+  "main": "src/main/index.js",
   "scripts": {
     "start": "electron .",
     "test": "vitest"

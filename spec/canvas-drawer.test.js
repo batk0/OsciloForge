@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import { CanvasDrawer } from '../src/js/canvas-drawer.js';
-import { WAVEFORM_POINTS } from '../src/js/state.js';
+import { CanvasDrawer } from '../src/renderer/api/canvas-drawer.js';
+import { WAVEFORM_POINTS } from '../src/renderer/api/state.js';
 
 // Mock getNiceTickInterval
 vi.mock('../src/js/utils.js', () => ({

@@ -1,21 +1,21 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { JSDOM } from "jsdom";
-import { MouseHandler } from "../src/js/mouse-handler.js";
+import { MouseHandler } from "../src/renderer/api/mouse-handler.js";
 import {
   WAVEFORM_POINTS,
   TOP_PADDING,
   RIGHT_PADDING,
   BOTTOM_PADDING,
   LEFT_PADDING,
-} from "../src/js/state.js";
+} from "../src/renderer/api/state.js";
 
 // Mock getMousePos with a function we can control
-vi.mock("../src/js/utils.js", () => ({
+vi.mock("../src/renderer/api/utils.js", () => ({
   getMousePos: vi.fn(),
 }));
 
 // Import the mocked function
-import { getMousePos } from "../src/js/utils.js";
+import { getMousePos } from "../src/renderer/api/utils.js";
 
 describe("MouseHandler", () => {
   let canvas;

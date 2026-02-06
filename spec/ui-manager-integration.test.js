@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { UIManager } from '../src/js/ui-manager.js';
-import { CanvasDrawer } from '../src/js/canvas-drawer.js';
-import { MouseHandler } from '../src/js/mouse-handler.js';
-import { state, updateState, WAVEFORM_POINTS } from '../src/js/state.js';
+import { UIManager } from '../src/renderer/api/ui-manager.js';
+import { CanvasDrawer } from '../src/renderer/api/canvas-drawer.js';
+import { MouseHandler } from '../src/renderer/api/mouse-handler.js';
+import { state, updateState, WAVEFORM_POINTS } from '../src/renderer/api/state.js';
 
 describe('UIManager Integration', () => {
     let uiManager;

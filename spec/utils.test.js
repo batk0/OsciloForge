@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getNiceTickInterval, getMousePos } from '../src/js/utils.js';
+import { getNiceTickInterval, getMousePos } from '../src/renderer/api/utils.js';
 
 describe('getNiceTickInterval', () => {
     it('should return 1 for roughInterval < 1.5 (normalized < 1.5)', () => {

@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { UIManager } from '../src/js/ui-manager.js';
-import { state, updateState, WAVEFORM_POINTS } from '../src/js/state.js';
-import { CanvasDrawer } from '../src/js/canvas-drawer.js';
-import { MouseHandler } from '../src/js/mouse-handler.js';
+import { UIManager } from '../src/renderer/api/ui-manager.js';
+import { state, updateState, WAVEFORM_POINTS } from '../src/renderer/api/state.js';
+import { CanvasDrawer } from '../src/renderer/api/canvas-drawer.js';
+import { MouseHandler } from '../src/renderer/api/mouse-handler.js';
 
 // Mock DOM elements
 const createMockElement = (id, type = 'div') => {

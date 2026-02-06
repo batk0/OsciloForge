@@ -7,7 +7,7 @@ import {
     LEFT_PADDING, 
     state, 
     updateState 
-} from '../src/js/state.js';
+} from '../src/renderer/api/state.js';
 
 describe('State Constants', () => {
     it('should have correct WAVEFORM_POINTS value', () => {
