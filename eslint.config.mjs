@@ -1,6 +1,17 @@
 import js from '@eslint/js';
 import globals from 'globals';
 
+const sharedSourceRules = {
+  'no-console': 'warn',
+  'no-unused-vars': [
+    'error',
+    {
+      args: 'after-used',
+      argsIgnorePattern: '^_'
+    }
+  ]
+};
+
 export default [
   js.configs.recommended,
 
@@ -196,16 +207,7 @@ export default [
       sourceType: 'script',
       globals: globals.node
     },
-    rules: {
-      'no-console': 'warn',
-      'no-unused-vars': [
-        'error',
-        {
-          args: 'after-used',
-          argsIgnorePattern: '^_'
-        }
-      ]
-    }
+    rules: sharedSourceRules
   },
 
   // Renderer files - ES modules, Browser environment
@@ -215,16 +217,7 @@ export default [
       sourceType: 'module',
       globals: globals.browser
     },
-    rules: {
-      'no-console': 'warn',
-      'no-unused-vars': [
-        'error',
-        {
-          args: 'after-used',
-          argsIgnorePattern: '^_'
-        }
-      ]
-    }
+    rules: sharedSourceRules
   },
 
   // Test files - Browser environment with vitest globals
