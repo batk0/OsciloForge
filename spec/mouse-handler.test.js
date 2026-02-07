@@ -227,6 +227,348 @@ describe('MouseHandler', () => {
     });
   });
 
+  // ============ PANNING AND ZOOMING TESTS ============
+  describe('Panning and Zooming', () => {
+    beforeEach(() => {
+      canvas.width = 800;
+      canvas.height = 400;
+      hooks.updateState.mockClear();
+      hooks.updateZoom.mockClear();
+      hooks.draw.mockClear();
+    });
+
+    it('should start panning on shift + mousedown', () => {
+      getMousePos.mockReturnValue({ x: 100, y: 100 });
+      const event = new dom.window.MouseEvent('mousedown', {
+        button: 0,
+        shiftKey: true
+      });
+      handler.handleMouseDown(event);
+
+      expect(handler.isPanning).toBe(true);
+      expect(handler.isZooming).toBe(false);
+      expect(handler.dragStartPos).toEqual({ x: 100, y: 100 });
+      expect(handler.dragStartHOffset).toBe(state.viewOffset);
+      expect(handler.dragStartVOffset).toBe(state.vShift);
+      expect(canvas.style.cursor).toBe('grabbing');
+    });
+
+    it('should update viewOffset and vShift when panning', () => {
+      // Start panning
+      getMousePos.mockReturnValue({ x: 100, y: 100 });
+      const eventDown = new dom.window.MouseEvent('mousedown', {
+        button: 0,
+        shiftKey: true
+      });
+      handler.handleMouseDown(eventDown);
+
+      // Move mouse
+      getMousePos.mockReturnValue({ x: 150, y: 120 });
+      const eventMove = new dom.window.MouseEvent('mousemove', {
+        shiftKey: true
+      });
+      handler.handleMouseMove(eventMove);
+
+      const chartWidth = canvas.clientWidth - (LEFT_PADDING + RIGHT_PADDING);
+      const pointsPerPixel = WAVEFORM_POINTS / state.hZoom / chartWidth;
+      const expectedHOffsetChange = 50 * pointsPerPixel;
+      const expectedVShiftChange = 20;
+
+      expect(hooks.updateState).toHaveBeenCalledWith({
+        viewOffset: handler.dragStartHOffset - expectedHOffsetChange
+      });
+      expect(hooks.updateState).toHaveBeenCalledWith({
+        vShift: handler.dragStartVOffset + expectedVShiftChange
+      });
+      expect(hooks.draw).toHaveBeenCalled();
+    });
+
+    it('should stop panning on mouseup', () => {
+      handler.isPanning = true;
+      canvas.style.cursor = 'grabbing';
+
+      const event = new dom.window.MouseEvent('mouseup');
+      handler.handleMouseUp(event);
+
+      expect(handler.isPanning).toBe(false);
+      expect(canvas.style.cursor).toBe('crosshair');
+    });
+
+    it('should start zooming on ctrl/meta + mousedown', () => {
+      getMousePos.mockReturnValue({ x: 100, y: 100 });
+      const event = new dom.window.MouseEvent('mousedown', {
+        button: 0,
+        ctrlKey: true
+      });
+      handler.handleMouseDown(event);
+
+      expect(handler.isZooming).toBe(true);
+      expect(handler.isPanning).toBe(false);
+      expect(handler.dragStartPos).toEqual({ x: 100, y: 100 });
+      expect(handler.dragStartHZoom).toBe(state.hZoom);
+      expect(handler.dragStartVZoom).toBe(state.vZoom);
+      expect(canvas.style.cursor).toBe('nwse-resize');
+    });
+
+    it('should determine zoom direction on mousemove', () => {
+      // Start zooming
+      getMousePos.mockReturnValue({ x: 100, y: 100 });
+      handler.handleMouseDown(
+        new dom.window.MouseEvent('mousedown', { ctrlKey: true })
+      );
+
+      // Horizontal movement
+      getMousePos.mockReturnValue({ x: 110, y: 101 });
+      handler.handleMouseMove(
+        new dom.window.MouseEvent('mousemove', { ctrlKey: true })
+      );
+      expect(handler.zoomDirection).toBe('horizontal');
+      expect(canvas.style.cursor).toBe('ew-resize');
+
+      // Reset and test vertical
+      handler.zoomDirection = 'none';
+      getMousePos.mockReturnValue({ x: 101, y: 110 });
+      handler.handleMouseMove(
+        new dom.window.MouseEvent('mousemove', { ctrlKey: true })
+      );
+      expect(handler.zoomDirection).toBe('vertical');
+      expect(canvas.style.cursor).toBe('ns-resize');
+    });
+
+    it('should update hZoom when zooming horizontally', () => {
+      state.hZoom = 2;
+      handler.dragStartHZoom = 2;
+      handler.isZooming = true;
+      handler.zoomDirection = 'horizontal';
+      handler.dragStartPos = { x: 100, y: 100 };
+
+      getMousePos.mockReturnValue({ x: 50, y: 100 }); // Moved 50px left
+      handler.handleMouseMove(
+        new dom.window.MouseEvent('mousemove', { ctrlKey: true })
+      );
+
+      const zoomFactor = Math.pow(2, 50 / 200); // 100 - 50 = 50
+      const expectedHZoom = 2 * zoomFactor;
+
+      expect(hooks.updateZoom).toHaveBeenCalledWith('h', expectedHZoom);
+    });
+
+    it('should update vZoom when zooming vertically', () => {
+      state.vZoom = 1.5;
+      handler.dragStartVZoom = 1.5;
+      handler.isZooming = true;
+      handler.zoomDirection = 'vertical';
+      handler.dragStartPos = { x: 100, y: 100 };
+
+      getMousePos.mockReturnValue({ x: 100, y: 150 }); // Moved 50px down
+      handler.handleMouseMove(
+        new dom.window.MouseEvent('mousemove', { ctrlKey: true })
+      );
+
+      const zoomFactor = Math.pow(2, -50 / 200);
+      const expectedVZoom = 1.5 * zoomFactor;
+
+      expect(hooks.updateZoom).toHaveBeenCalledWith('v', expectedVZoom);
+    });
+
+    it('should stop zooming on mouseleave', () => {
+      handler.isZooming = true;
+      canvas.style.cursor = 'ew-resize';
+
+      const event = new dom.window.MouseEvent('mouseleave');
+      handler.handleMouseLeave(event);
+
+      expect(handler.isZooming).toBe(false);
+      expect(canvas.style.cursor).toBe('crosshair');
+    });
+
+    it('should just draw if zoom drag is not far enough to determine direction', () => {
+      handler.isZooming = true;
+      handler.zoomDirection = 'none';
+      handler.dragStartPos = { x: 100, y: 100 };
+
+      getMousePos.mockReturnValue({ x: 102, y: 102 }); // Move just a little
+      handler.handleMouseMove(
+        new dom.window.MouseEvent('mousemove', { ctrlKey: true })
+      );
+
+      expect(handler.zoomDirection).toBe('none');
+      expect(hooks.updateZoom).not.toHaveBeenCalled();
+      expect(hooks.draw).toHaveBeenCalled();
+    });
+  });
+
+  // ============ FREEHAND DRAWING TESTS ============
+  describe('Freehand Drawing', () => {
+    beforeEach(() => {
+      canvas.width = 800;
+      canvas.height = 400;
+      handler.setEditMode('freehand');
+      hooks.updateState.mockClear();
+      hooks.draw.mockClear();
+    });
+
+    it('should start drawing on mousedown in freehand mode', () => {
+      getMousePos.mockReturnValue({ x: 100, y: 150 });
+      const event = new dom.window.MouseEvent('mousedown', { button: 0 });
+      handler.handleMouseDown(event);
+
+      expect(handler.isDrawing).toBe(true);
+      expect(hooks.updateState).toHaveBeenCalled();
+      expect(hooks.draw).toHaveBeenCalled();
+    });
+
+    it('should not draw if mousedown is outside chart area', () => {
+      getMousePos.mockReturnValue({ x: LEFT_PADDING - 1, y: 150 });
+      const event = new dom.window.MouseEvent('mousedown', { button: 0 });
+      handler.handleMouseDown(event);
+
+      expect(handler.isDrawing).toBe(false);
+      expect(hooks.updateState).not.toHaveBeenCalled();
+    });
+
+    it('should continuously draw on mousemove when isDrawing is true', () => {
+      // Start drawing
+      getMousePos.mockReturnValue({ x: 100, y: 150 });
+      handler.handleMouseDown(
+        new dom.window.MouseEvent('mousedown', { button: 0 })
+      );
+      hooks.updateState.mockClear();
+      hooks.draw.mockClear();
+
+      // Move mouse
+      getMousePos.mockReturnValue({ x: 105, y: 155 });
+      handler.handleMouseMove(new dom.window.MouseEvent('mousemove'));
+
+      expect(handler.isDrawing).toBe(true);
+      expect(hooks.updateState).toHaveBeenCalledTimes(1);
+      expect(hooks.draw).toHaveBeenCalledTimes(1);
+      expect(handler.lastPoint.x).not.toBe(-1);
+    });
+
+    it('should interpolate between points during freehand drawing', () => {
+      const startX = 100;
+      const startY = 150;
+      const endX = 110;
+      const endY = 160;
+
+      // Start drawing
+      getMousePos.mockReturnValue({ x: startX, y: startY });
+      handler.handleMouseDown(
+        new dom.window.MouseEvent('mousedown', { button: 0 })
+      );
+
+      // Move mouse
+      getMousePos.mockReturnValue({ x: endX, y: endY });
+      handler.handleMouseMove(new dom.window.MouseEvent('mousemove'));
+
+      const updatedData = hooks.updateState.mock.calls[0][0].waveformData;
+
+      const chartWidth = canvas.width - (LEFT_PADDING + RIGHT_PADDING);
+      const visiblePoints = WAVEFORM_POINTS / state.hZoom;
+      const localXScale = chartWidth / visiblePoints;
+
+      const startIndex = Math.floor(
+        (startX - LEFT_PADDING) / localXScale + state.viewOffset
+      );
+      const endIndex = Math.floor(
+        (endX - LEFT_PADDING) / localXScale + state.viewOffset
+      );
+
+      // Check that points between start and end are interpolated
+      expect(updatedData[startIndex]).toBeDefined();
+      expect(updatedData[endIndex]).toBeDefined();
+      // A more detailed check would require replicating the exact interpolation logic
+      // but checking the endpoints is a good start.
+      const hasChanged =
+        updatedData[startIndex] !== state.waveformData[startIndex] ||
+        updatedData[endIndex] !== state.waveformData[endIndex];
+      expect(hasChanged).toBe(true);
+    });
+
+    it('should stop drawing on mouseup', () => {
+      handler.isDrawing = true;
+      handler.lastPoint = { x: 100, y: 0.5 };
+
+      handler.handleMouseUp(new dom.window.MouseEvent('mouseup'));
+
+      expect(handler.isDrawing).toBe(false);
+      expect(handler.lastPoint).toEqual({ x: -1, y: -1 });
+    });
+
+    it('should stop drawing on mouseleave', () => {
+      handler.isDrawing = true;
+      handler.lastPoint = { x: 100, y: 0.5 };
+
+      handler.handleMouseLeave(new dom.window.MouseEvent('mouseleave'));
+
+      expect(handler.isDrawing).toBe(false);
+      expect(handler.lastPoint).toEqual({ x: -1, y: -1 });
+    });
+
+    it('should not draw in freehand if isDrawing is false', () => {
+      handler.isDrawing = false;
+      handler.handleFreehandDraw(new dom.window.MouseEvent('mousemove'));
+      expect(hooks.updateState).not.toHaveBeenCalled();
+      expect(hooks.draw).not.toHaveBeenCalled();
+    });
+  });
+
+  // ============ MOUSE BUTTON AND EVENT HANDLING TESTS ============
+  describe('Mouse Button and Event Handling', () => {
+    it('should ignore non-primary mouse buttons for drawing', () => {
+      handler.setEditMode('freehand');
+      hooks.updateState.mockClear(); // Clear mock after setup
+
+      getMousePos.mockReturnValue({ x: 100, y: 150 });
+
+      // Right click
+      const rightClick = new dom.window.MouseEvent('mousedown', { button: 2 });
+      handler.handleMouseDown(rightClick);
+      expect(handler.isDrawing).toBe(false);
+      expect(hooks.updateState).not.toHaveBeenCalled();
+
+      // Middle click
+      const middleClick = new dom.window.MouseEvent('mousedown', { button: 1 });
+      handler.handleMouseDown(middleClick);
+      expect(handler.isDrawing).toBe(false);
+      expect(hooks.updateState).not.toHaveBeenCalled();
+    });
+
+    it('should reset drawing state on mouse up/leave', () => {
+      handler.setEditMode('freehand');
+      handler.isDrawing = true;
+      handler.lastPoint = { x: 123, y: 0.45 };
+
+      handler.handleMouseUp(new dom.window.MouseEvent('mouseup'));
+      expect(handler.isDrawing).toBe(false);
+      expect(handler.lastPoint).toEqual({ x: -1, y: -1 });
+
+      handler.isDrawing = true;
+      handler.lastPoint = { x: 123, y: 0.45 };
+
+      handler.handleMouseLeave(new dom.window.MouseEvent('mouseleave'));
+      expect(handler.isDrawing).toBe(false);
+      expect(handler.lastPoint).toEqual({ x: -1, y: -1 });
+    });
+
+    it('should reset panning/zooming state on mouse up/leave', () => {
+      handler.isPanning = true;
+      handler.isZooming = true;
+
+      handler.handleMouseUp(new dom.window.MouseEvent('mouseup'));
+      expect(handler.isPanning).toBe(false);
+      expect(handler.isZooming).toBe(false);
+
+      handler.isPanning = true;
+      handler.isZooming = true;
+
+      handler.handleMouseLeave(new dom.window.MouseEvent('mouseleave'));
+      expect(handler.isPanning).toBe(false);
+      expect(handler.isZooming).toBe(false);
+    });
+  });
+
   // ============ LINE DRAWING TESTS ============
   describe('Line Drawing Tests', () => {
     const CANVAS_HEIGHT = 400;

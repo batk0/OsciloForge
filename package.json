@@ -7,8 +7,8 @@
   "scripts": {
     "start": "electron .",
     "test": "vitest",
-    "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix"
+    "lint": "eslint src/ spec/",
+    "lint:fix": "eslint src/ spec/ --fix"
   },
   "keywords": [],
   "author": "",
