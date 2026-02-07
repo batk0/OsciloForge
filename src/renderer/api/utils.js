@@ -1,5 +1,11 @@
 export function getNiceTickInterval(range, maxTicks) {
+  if (range <= 0 || maxTicks <= 0) {
+    return 0;
+  }
   const roughInterval = range / maxTicks;
+  if (!isFinite(roughInterval)) {
+    return 0;
+  }
   const p = Math.floor(Math.log10(roughInterval));
   const p10 = Math.pow(10, p);
   const v = roughInterval / p10; // Normalized between 1 and 10

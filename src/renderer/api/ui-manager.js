@@ -321,13 +321,14 @@ export class UIManager {
           updates.viewOffset = clampedOffset;
         }
         if (newState.vShift !== undefined) {
-          if (!this.canvas) {
-            return;
+          if (this.canvas) {
+            const chartHeight = this.canvas.clientHeight - (TOP_PADDING + BOTTOM_PADDING);
+            const maxPixelShift = (chartHeight / 2) * Math.abs(this.state.vZoom - 1);
+            const clampedShift = Math.max(-maxPixelShift, Math.min(maxPixelShift, newState.vShift));
+            updates.vShift = clampedShift;
+          } else {
+            updates.vShift = newState.vShift;
           }
-          const chartHeight = this.canvas.clientHeight - (TOP_PADDING + BOTTOM_PADDING);
-          const maxPixelShift = (chartHeight / 2) * Math.abs(this.state.vZoom - 1);
-          const clampedShift = Math.max(-maxPixelShift, Math.min(maxPixelShift, newState.vShift));
-          updates.vShift = clampedShift;
         }
 
         // Pass through any other properties (like waveformData) unchanged

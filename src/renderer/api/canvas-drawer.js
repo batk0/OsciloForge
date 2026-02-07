@@ -5,9 +5,15 @@ export class CanvasDrawer {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
+    if (!this.ctx) {
+      throw new Error('2D context not available');
+    }
   }
 
   draw(state) {
+    if (!this.ctx) {
+      return;
+    }
     const {
       waveformData, hZoom, vZoom, viewOffset, vShift, drawStyle
     } = state;
@@ -68,6 +74,9 @@ export class CanvasDrawer {
   }
 
   drawAxesAndGrid(chartWidth, chartHeight, hZoom, vZoom, viewOffset, vShift) {
+    if (!this.ctx) {
+      return;
+    }
     const axisColor = '#f0f0f0';
     const gridColor = '#444';
     const textColor = '#f0f0f0';

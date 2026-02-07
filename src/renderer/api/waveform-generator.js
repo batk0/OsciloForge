@@ -7,6 +7,9 @@ export function generateSineWave(amplitude, cycles, points) {
 }
 
 export function generateSquareWave(amplitude, cycles, dutyCycle, points) {
+  if (cycles <= 0) {
+    throw new RangeError('cycles must be > 0');
+  }
   const data = new Float32Array(points);
   const periodPoints = points / cycles;
   const dutyPoints = periodPoints * (dutyCycle / 100);
@@ -18,6 +21,9 @@ export function generateSquareWave(amplitude, cycles, dutyCycle, points) {
 }
 
 export function generateTriangleWave(amplitude, cycles, points) {
+  if (cycles <= 0) {
+    throw new RangeError('cycles must be > 0');
+  }
   const data = new Float32Array(points);
   const periodPoints = points / cycles;
   const quarterPeriod = periodPoints / 4;

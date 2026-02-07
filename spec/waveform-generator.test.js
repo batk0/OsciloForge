@@ -40,6 +40,11 @@ describe('Waveform Generator', () => {
     expect(result[WAVEFORM_POINTS / 2]).toBeCloseTo(-amplitude); // Just after the switch
   });
 
+  it('generateSquareWave should throw RangeError for cycles <= 0', () => {
+    expect(() => generateSquareWave(1, 0, 50, WAVEFORM_POINTS)).toThrow(RangeError);
+    expect(() => generateSquareWave(1, -1, 50, WAVEFORM_POINTS)).toThrow(RangeError);
+  });
+
   it('generateTriangleWave should return a Float32Array of correct length with triangle wave data', () => {
     const amplitude = 1.0;
     const cycles = 1;
@@ -54,5 +59,10 @@ describe('Waveform Generator', () => {
     expect(result[WAVEFORM_POINTS / 4]).toBeCloseTo(amplitude);
     expect(result[WAVEFORM_POINTS / 2]).toBeCloseTo(0);
     expect(result[WAVEFORM_POINTS * 3 / 4]).toBeCloseTo(-amplitude);
+  });
+
+  it('generateTriangleWave should throw RangeError for cycles <= 0', () => {
+    expect(() => generateTriangleWave(1, 0, WAVEFORM_POINTS)).toThrow(RangeError);
+    expect(() => generateTriangleWave(1, -1, WAVEFORM_POINTS)).toThrow(RangeError);
   });
 });

@@ -232,6 +232,8 @@ describe('MouseHandler', () => {
     beforeEach(() => {
       canvas.width = 800;
       canvas.height = 400;
+      Object.defineProperty(canvas, 'clientWidth', { value: 800 });
+      Object.defineProperty(canvas, 'clientHeight', { value: 400 });
       hooks.updateState.mockClear();
       hooks.updateZoom.mockClear();
       hooks.draw.mockClear();

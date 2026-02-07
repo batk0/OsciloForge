@@ -251,8 +251,7 @@ export class MouseHandler {
   }
 
   setEditMode(mode) {
-    this.state.editMode = mode;
-    this.hooks.updateState({ lineStartPoint: null });
+    this.hooks.updateState({ editMode: mode, lineStartPoint: null });
     this.isDrawing = false;
     this.lastPoint = { x: -1, y: -1 };
   }
