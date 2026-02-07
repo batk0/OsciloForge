@@ -1,5 +1,12 @@
 # OscilloForge
 
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+[![Electron](https://img.shields.io/github/package-json/dependency-version/batk0/OsciloForge/dev/electron)](https://www.electronjs.org/)
+[![Tests](https://img.shields.io/github/package-json/dependency-version/batk0/OsciloForge/dev/vitest)](https://vitest.dev/)
+[![Lint](https://img.shields.io/github/package-json/dependency-version/batk0/OsciloForge/dev/eslint)](https://eslint.org/)
+[![CI](https://github.com/batk0/OsciloForge/actions/workflows/tests.yml/badge.svg)](https://github.com/batk0/OsciloForge/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/gh/batk0/OsciloForge/branch/main/graph/badge.svg)](https://codecov.io/gh/batk0/OsciloForge)
+
 ![OscilloForge Screenshot](OsciloForge.png)
 
 ## Overview

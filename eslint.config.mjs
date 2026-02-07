@@ -1,0 +1,234 @@
+import js from '@eslint/js';
+import globals from 'globals';
+
+const sharedSourceRules = {
+  'no-console': 'warn',
+  'no-unused-vars': [
+    'error',
+    {
+      args: 'after-used',
+      argsIgnorePattern: '^_'
+    }
+  ]
+};
+
+export default [
+  js.configs.recommended,
+
+  // Base configuration for all JS files with custom rules
+  {
+    files: ['**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+        ...globals.browser
+      }
+    },
+    rules: {
+      indent: [
+        'error',
+        2,
+        {
+          SwitchCase: 1,
+          VariableDeclarator: 1,
+          outerIIFEBody: 1,
+          MemberExpression: 1,
+          FunctionDeclaration: {
+            parameters: 1,
+            body: 1
+          },
+          FunctionExpression: {
+            parameters: 1,
+            body: 1
+          },
+          CallExpression: {
+            arguments: 1
+          },
+          ArrayExpression: 1,
+          ObjectExpression: 1
+        }
+      ],
+      'linebreak-style': [
+        'error',
+        'unix'
+      ],
+      quotes: [
+        'error',
+        'single',
+        {
+          avoidEscape: true
+        }
+      ],
+      semi: [
+        'error',
+        'always'
+      ],
+      'comma-dangle': [
+        'error',
+        'never'
+      ],
+      'no-multiple-empty-lines': [
+        'error',
+        {
+          max: 1,
+          maxEOF: 0
+        }
+      ],
+      'eol-last': [
+        'error',
+        'always'
+      ],
+      'keyword-spacing': [
+        'error',
+        {
+          before: true,
+          after: true
+        }
+      ],
+      'space-before-blocks': [
+        'error',
+        'always'
+      ],
+      'space-before-function-paren': [
+        'error',
+        {
+          anonymous: 'always',
+          named: 'never',
+          asyncArrow: 'always'
+        }
+      ],
+      'object-curly-spacing': [
+        'error',
+        'always'
+      ],
+      'array-bracket-spacing': [
+        'error',
+        'never'
+      ],
+      'computed-property-spacing': [
+        'error',
+        'never'
+      ],
+      'space-infix-ops': 'error',
+      'space-unary-ops': [
+        'error',
+        {
+          words: true,
+          nonwords: false
+        }
+      ],
+      'no-trailing-spaces': 'error',
+      'no-mixed-spaces-and-tabs': 'error',
+      'no-var': 'error',
+      'prefer-const': 'error',
+      'prefer-arrow-callback': [
+        'warn',
+        {
+          allowNamedFunctions: true
+        }
+      ],
+      'no-eval': 'error',
+      'no-implied-eval': 'error',
+      'no-new-func': 'error',
+      'no-loop-func': 'error',
+      'no-unreachable': 'error',
+      'no-undef': 'error',
+      'no-duplicate-imports': 'error',
+      'no-self-assign': 'error',
+      'no-self-compare': 'error',
+      'no-constant-condition': [
+        'warn',
+        {
+          checkLoops: true
+        }
+      ],
+      'no-sparse-arrays': 'error',
+      'no-irregular-whitespace': 'error',
+      'valid-typeof': 'error',
+      curly: [
+        'error',
+        'all'
+      ],
+      'brace-style': [
+        'error',
+        '1tbs',
+        {
+          allowSingleLine: false
+        }
+      ],
+      'no-else-return': 'warn',
+      'no-multi-spaces': 'error',
+      'no-multi-str': 'error',
+      'no-octal-escape': 'error',
+      'no-octal': 'error',
+      'no-proto': 'error',
+      'no-redeclare': 'error',
+      'no-return-assign': [
+        'error',
+        'except-parens'
+      ],
+      'no-script-url': 'error',
+      'no-sequences': 'error',
+      'no-throw-literal': 'error',
+      'no-with': 'error',
+      yoda: [
+        'warn',
+        'never',
+        {
+          exceptRange: true
+        }
+      ],
+      'constructor-super': 'error',
+      'no-class-assign': 'error',
+      'no-const-assign': 'error',
+      'no-dupe-class-members': 'error',
+      'no-dupe-keys': 'error',
+      'no-dupe-args': 'error',
+      'no-import-assign': 'error',
+      'no-new-symbol': 'error',
+      'no-this-before-super': 'error',
+      'require-yield': 'error',
+      'no-unused-expressions': [
+        'error',
+        {
+          allowShortCircuit: true,
+          allowTernary: true
+        }
+      ]
+    }
+  },
+
+  // Main and preload files - CommonJS, Node environment
+  {
+    files: ['src/main/**/*.js', 'src/preload/**/*.js'],
+    languageOptions: {
+      sourceType: 'script',
+      globals: globals.node
+    },
+    rules: sharedSourceRules
+  },
+
+  // Renderer files - ES modules, Browser environment
+  {
+    files: ['src/renderer/**/*.js'],
+    languageOptions: {
+      sourceType: 'module',
+      globals: globals.browser
+    },
+    rules: sharedSourceRules
+  },
+
+  // Test files - Browser environment with vitest globals
+  {
+    files: ['spec/**/*.js'],
+    languageOptions: {
+      sourceType: 'module',
+      globals: {
+        ...globals.browser,
+        ...globals.vitest
+      }
+    }
+  }
+];
