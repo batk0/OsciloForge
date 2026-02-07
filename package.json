@@ -3,16 +3,25 @@
   "version": "1.0.0",
   "productName": "OscilloForge",
   "description": "",
-  "main": "main.js",
+  "main": "src/main/index.js",
   "scripts": {
     "start": "electron .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest",
+    "lint": "eslint src/ spec/",
+    "lint:fix": "eslint src/ spec/ --fix"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "electron": "^39.2.7"
+    "@vitest/coverage-v8": "^4.0.17",
+    "electron": "^39.2.7",
+    "eslint": "^8.57.1",
+    "jsdom": "^27.4.0",
+    "vitest": "^4.0.17"
+  },
+  "dependencies": {
+    "canvas": "^3.2.1"
   }
 }
