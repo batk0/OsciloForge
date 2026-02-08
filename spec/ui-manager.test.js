@@ -266,6 +266,7 @@ describe('UIManager', () => {
       elements.zoomResetBtn.click();
 
       expect(state.viewOffset).toBe(0);
+      expect(mockDrawFunction).toHaveBeenCalled();
     });
 
     it('should reset vShift to 0 when zoom reset button is clicked', () => {
@@ -274,6 +275,7 @@ describe('UIManager', () => {
       elements.zoomResetBtn.click();
 
       expect(state.vShift).toBe(0);
+      expect(mockDrawFunction).toHaveBeenCalled();
     });
 
     it('should preserve waveform data when zoom reset button is clicked', () => {

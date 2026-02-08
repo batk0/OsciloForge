@@ -153,8 +153,12 @@ export class UIManager {
 
     this.zoomResetBtn.addEventListener('click', () => {
       // Reset zoom sliders
-      this.hZoomSlider.value = 1;
-      this.vZoomSlider.value = 1;
+      if (this.hZoomSlider) {
+        this.hZoomSlider.value = 1;
+      }
+      if (this.vZoomSlider) {
+        this.vZoomSlider.value = 1;
+      }
 
       // Update state with reset zoom and offsets
       this.updateState({
