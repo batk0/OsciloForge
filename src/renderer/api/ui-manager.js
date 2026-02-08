@@ -24,6 +24,7 @@ export class UIManager {
     this.drawStyleDots = null;
     this.waveformTypeSelect = null;
     this.amplitudeInput = null;
+    this.minValueInput = null;
     this.cyclesInput = null;
     this.dutyCycleInput = null;
     this.generateWaveformBtn = null;
@@ -46,6 +47,7 @@ export class UIManager {
     this.drawStyleDots = document.getElementById('draw-style-dots');
     this.waveformTypeSelect = document.getElementById('waveform-type');
     this.amplitudeInput = document.getElementById('amplitude');
+    this.minValueInput = document.getElementById('min-value');
     this.cyclesInput = document.getElementById('cycles');
     this.dutyCycleInput = document.getElementById('duty-cycle');
     this.generateWaveformBtn = document.getElementById('generate-waveform-btn');
@@ -259,18 +261,27 @@ export class UIManager {
   }
 
   setupWaveformGenerationListeners() {
-    if (!this.generateWaveformBtn || !this.waveformTypeSelect || !this.amplitudeInput || !this.cyclesInput || !this.dutyCycleInput) {
+    if (!this.generateWaveformBtn || !this.waveformTypeSelect || !this.amplitudeInput || !this.minValueInput || !this.cyclesInput || !this.dutyCycleInput) {
       return;
     }
 
     this.generateWaveformBtn.addEventListener('click', () => {
       const type = this.waveformTypeSelect.value;
-      const amplitude = parseFloat(this.amplitudeInput.value);
+      const max = parseFloat(this.amplitudeInput.value);
+      const min = parseFloat(this.minValueInput.value);
       const cycles = parseInt(this.cyclesInput.value);
       const dutyCycle = parseInt(this.dutyCycleInput.value);
 
-      if (isNaN(amplitude) || amplitude < 0 || amplitude > 1) {
-        alert('Amplitude must be between 0 and 1.');
+      if (isNaN(max) || max < -1 || max > 1) {
+        alert('Max value must be between -1 and 1.');
+        return;
+      }
+      if (isNaN(min) || min < -1 || min > 1) {
+        alert('Min value must be between -1 and 1.');
+        return;
+      }
+      if (min >= max) {
+        alert('Min must be less than Max.');
         return;
       }
       if (isNaN(cycles) || cycles < 1) {
@@ -285,13 +296,13 @@ export class UIManager {
       let newWaveformData;
       switch (type) {
         case 'sine':
-          newWaveformData = generateSineWave(amplitude, cycles, WAVEFORM_POINTS);
+          newWaveformData = generateSineWave(min, max, cycles, WAVEFORM_POINTS);
           break;
         case 'square':
-          newWaveformData = generateSquareWave(amplitude, cycles, dutyCycle, WAVEFORM_POINTS);
+          newWaveformData = generateSquareWave(min, max, cycles, dutyCycle, WAVEFORM_POINTS);
           break;
         case 'triangle':
-          newWaveformData = generateTriangleWave(amplitude, cycles, WAVEFORM_POINTS);
+          newWaveformData = generateTriangleWave(min, max, cycles, WAVEFORM_POINTS);
           break;
         default:
           return;

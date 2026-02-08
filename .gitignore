@@ -9,7 +9,7 @@
 /docs/**/*.md
 SUMMARY.md
 API.md
-AGENTS.md
+#AGENTS.md
 GEMINI.md
 
 node_modules

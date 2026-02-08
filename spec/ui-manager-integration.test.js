@@ -57,6 +57,7 @@ describe('UIManager Integration', () => {
 
     createMockElement('waveform-type', 'select');
     createMockElement('amplitude', 'input');
+    createMockElement('min-value', 'input');
     createMockElement('cycles', 'input');
     createMockElement('duty-cycle', 'input');
     createMockElement('generate-waveform-btn', 'button');
@@ -231,13 +232,13 @@ describe('UIManager Integration', () => {
     });
 
     it('should validate waveform generation inputs', async () => {
-      // Set invalid amplitude
+      // Set invalid max value
       uiManager.amplitudeInput.value = '2.0'; // Invalid ( > 1.0 )
       const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
 
       uiManager.generateWaveformBtn.click();
 
-      expect(alertSpy).toHaveBeenCalledWith('Amplitude must be between 0 and 1.');
+      expect(alertSpy).toHaveBeenCalledWith('Max value must be between -1 and 1.');
 
       alertSpy.mockRestore();
     });

@@ -46,6 +46,7 @@ describe('UIManager', () => {
       drawStyleDots: createMockElement('draw-style-dots', 'input'),
       waveformTypeSelect: createMockElement('waveform-type', 'select'),
       amplitudeInput: createMockElement('amplitude', 'input'),
+      minValueInput: createMockElement('min-value', 'input'),
       cyclesInput: createMockElement('cycles', 'input'),
       dutyCycleInput: createMockElement('duty-cycle', 'input'),
       generateWaveformBtn: createMockElement('generate-waveform-btn', 'button'),
