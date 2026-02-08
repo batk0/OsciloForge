@@ -55,8 +55,14 @@ describe('UIManager Integration', () => {
     drawStyleDots.type = 'radio';
     drawStyleDots.name = 'draw-style';
 
-    createMockElement('waveform-type', 'select');
+    const waveformTypeSelect = createMockElement('waveform-type', 'select');
+    waveformTypeSelect.innerHTML = `
+      <option value="sine">Sine</option>
+      <option value="square">Square</option>
+      <option value="triangle">Triangle</option>
+    `;
     createMockElement('amplitude', 'input');
+    createMockElement('min-value', 'input');
     createMockElement('cycles', 'input');
     createMockElement('duty-cycle', 'input');
     createMockElement('generate-waveform-btn', 'button');
@@ -231,14 +237,189 @@ describe('UIManager Integration', () => {
     });
 
     it('should validate waveform generation inputs', async () => {
-      // Set invalid amplitude
+      // Set invalid max value
       uiManager.amplitudeInput.value = '2.0'; // Invalid ( > 1.0 )
       const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
 
       uiManager.generateWaveformBtn.click();
 
-      expect(alertSpy).toHaveBeenCalledWith('Amplitude must be between 0 and 1.');
+      expect(alertSpy).toHaveBeenCalledWith('Max value must be between -1 and 1.');
 
+      alertSpy.mockRestore();
+    });
+
+    it('should validate min value less than -1', () => {
+      uiManager.amplitudeInput.value = '0.5';
+      uiManager.minValueInput.value = '-1.5'; // Invalid ( < -1 )
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      uiManager.generateWaveformBtn.click();
+
+      expect(alertSpy).toHaveBeenCalledWith('Min value must be between -1 and 1.');
+      alertSpy.mockRestore();
+    });
+
+    it('should validate min value greater than 1', () => {
+      uiManager.amplitudeInput.value = '0.5';
+      uiManager.minValueInput.value = '1.5'; // Invalid ( > 1 )
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      uiManager.generateWaveformBtn.click();
+
+      expect(alertSpy).toHaveBeenCalledWith('Min value must be between -1 and 1.');
+      alertSpy.mockRestore();
+    });
+
+    it('should validate min value not less than max', () => {
+      uiManager.amplitudeInput.value = '0.5';
+      uiManager.minValueInput.value = '0.5'; // Invalid ( min >= max )
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      uiManager.generateWaveformBtn.click();
+
+      expect(alertSpy).toHaveBeenCalledWith('Min must be less than Max.');
+      alertSpy.mockRestore();
+    });
+
+    it('should validate min greater than max', () => {
+      uiManager.amplitudeInput.value = '-0.5';
+      uiManager.minValueInput.value = '0.5'; // Invalid ( min > max )
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      uiManager.generateWaveformBtn.click();
+
+      expect(alertSpy).toHaveBeenCalledWith('Min must be less than Max.');
+      alertSpy.mockRestore();
+    });
+
+    it('should validate cycles is a positive integer', () => {
+      uiManager.amplitudeInput.value = '0.5';
+      uiManager.minValueInput.value = '-0.5';
+      uiManager.cyclesInput.value = '0'; // Invalid ( < 1 )
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      uiManager.generateWaveformBtn.click();
+
+      expect(alertSpy).toHaveBeenCalledWith('Cycles must be a positive integer.');
+      alertSpy.mockRestore();
+    });
+
+    it('should validate cycles is not NaN', () => {
+      uiManager.amplitudeInput.value = '0.5';
+      uiManager.minValueInput.value = '-0.5';
+      uiManager.cyclesInput.value = 'invalid'; // Invalid ( NaN )
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      uiManager.generateWaveformBtn.click();
+
+      expect(alertSpy).toHaveBeenCalledWith('Cycles must be a positive integer.');
+      alertSpy.mockRestore();
+    });
+
+    it('should validate duty cycle for square waves', () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      // Must set values in DOM elements before uiManager reads them
+      uiManager.waveformTypeSelect.value = 'square';
+      uiManager.amplitudeInput.value = '0.5';
+      uiManager.minValueInput.value = '-0.5';
+      uiManager.cyclesInput.value = '1';
+      uiManager.dutyCycleInput.value = '150'; // Invalid ( > 100 )
+
+      uiManager.generateWaveformBtn.click();
+
+      expect(alertSpy).toHaveBeenCalledWith('Duty Cycle must be between 0 and 100 for Square waves.');
+      alertSpy.mockRestore();
+    });
+
+    it('should validate duty cycle is not negative for square waves', () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      // Must set values in DOM elements before uiManager reads them
+      uiManager.waveformTypeSelect.value = 'square';
+      uiManager.amplitudeInput.value = '0.5';
+      uiManager.minValueInput.value = '-0.5';
+      uiManager.cyclesInput.value = '1';
+      uiManager.dutyCycleInput.value = '-10'; // Invalid ( < 0 )
+
+      uiManager.generateWaveformBtn.click();
+
+      expect(alertSpy).toHaveBeenCalledWith('Duty Cycle must be between 0 and 100 for Square waves.');
+      alertSpy.mockRestore();
+    });
+
+    it('should validate max value less than -1', () => {
+      uiManager.amplitudeInput.value = '-1.5'; // Invalid ( < -1 )
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      uiManager.generateWaveformBtn.click();
+
+      expect(alertSpy).toHaveBeenCalledWith('Max value must be between -1 and 1.');
+      alertSpy.mockRestore();
+    });
+
+    it('should successfully generate sine wave with valid min/max', () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      // Set up initial state with zeros
+      const initialData = new Float32Array(WAVEFORM_POINTS).fill(0.0);
+      updateState({
+        waveformData: new Float32Array(initialData),
+        lastLoadedWaveformData: new Float32Array(initialData)
+      });
+
+      uiManager.waveformTypeSelect.value = 'sine';
+      uiManager.amplitudeInput.value = '0.8';
+      uiManager.minValueInput.value = '-0.5';
+      uiManager.cyclesInput.value = '2';
+
+      uiManager.generateWaveformBtn.click();
+
+      expect(alertSpy).not.toHaveBeenCalled();
+      expect(drawFunction).toHaveBeenCalled();
+      // Verify waveform data was updated (check that at least one value is non-zero)
+      const hasNonZero = state.waveformData.some(v => v !== 0);
+      expect(hasNonZero).toBe(true);
+      alertSpy.mockRestore();
+    });
+
+    it('should successfully generate square wave with valid min/max', () => {
+      uiManager.waveformTypeSelect.value = 'square';
+      uiManager.amplitudeInput.value = '0.5';
+      uiManager.minValueInput.value = '-0.5';
+      uiManager.cyclesInput.value = '1';
+      uiManager.dutyCycleInput.value = '50';
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      uiManager.generateWaveformBtn.click();
+
+      expect(alertSpy).not.toHaveBeenCalled();
+      expect(drawFunction).toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it('should successfully generate triangle wave with valid min/max', () => {
+      uiManager.waveformTypeSelect.value = 'triangle';
+      uiManager.amplitudeInput.value = '0.5';
+      uiManager.minValueInput.value = '-0.5';
+      uiManager.cyclesInput.value = '1';
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      uiManager.generateWaveformBtn.click();
+
+      expect(alertSpy).not.toHaveBeenCalled();
+      expect(drawFunction).toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it('should handle invalid waveform type gracefully', () => {
+      uiManager.waveformTypeSelect.value = 'invalid-type';
+      uiManager.amplitudeInput.value = '0.5';
+      uiManager.minValueInput.value = '-0.5';
+      uiManager.cyclesInput.value = '1';
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      uiManager.generateWaveformBtn.click();
+
+      // Should not generate anything or throw, just return early
+      expect(alertSpy).not.toHaveBeenCalled();
       alertSpy.mockRestore();
     });
 

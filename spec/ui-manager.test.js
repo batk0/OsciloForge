@@ -46,6 +46,7 @@ describe('UIManager', () => {
       drawStyleDots: createMockElement('draw-style-dots', 'input'),
       waveformTypeSelect: createMockElement('waveform-type', 'select'),
       amplitudeInput: createMockElement('amplitude', 'input'),
+      minValueInput: createMockElement('min-value', 'input'),
       cyclesInput: createMockElement('cycles', 'input'),
       dutyCycleInput: createMockElement('duty-cycle', 'input'),
       generateWaveformBtn: createMockElement('generate-waveform-btn', 'button'),
@@ -315,6 +316,100 @@ describe('UIManager', () => {
     });
   });
 
+  describe('waveform generation validation', () => {
+    beforeEach(() => {
+      // Add options to waveform type select
+      elements.waveformTypeSelect.innerHTML = `
+        <option value="sine">Sine</option>
+        <option value="square">Square</option>
+        <option value="triangle">Triangle</option>
+      `;
+      uiManager.initializeElements();
+      uiManager.setupWaveformGenerationListeners();
+      // Set valid default values
+      elements.waveformTypeSelect.value = 'sine';
+      elements.amplitudeInput.value = '0.5';
+      elements.minValueInput.value = '-0.5';
+      elements.cyclesInput.value = '1';
+      elements.dutyCycleInput.value = '50';
+    });
+
+    it('should alert when min value is less than -1', () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      elements.minValueInput.value = '-1.5';
+
+      elements.generateWaveformBtn.click();
+
+      expect(alertSpy).toHaveBeenCalledWith('Min value must be between -1 and 1.');
+      expect(mockDrawFunction).not.toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it('should alert when min value is greater than 1', () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      elements.minValueInput.value = '1.5';
+
+      elements.generateWaveformBtn.click();
+
+      expect(alertSpy).toHaveBeenCalledWith('Min value must be between -1 and 1.');
+      expect(mockDrawFunction).not.toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it('should alert when min is not less than max', () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      elements.amplitudeInput.value = '0.5';
+      elements.minValueInput.value = '0.5';
+
+      elements.generateWaveformBtn.click();
+
+      expect(alertSpy).toHaveBeenCalledWith('Min must be less than Max.');
+      expect(mockDrawFunction).not.toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it('should alert when cycles is less than 1', () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      elements.cyclesInput.value = '0';
+
+      elements.generateWaveformBtn.click();
+
+      expect(alertSpy).toHaveBeenCalledWith('Cycles must be a positive integer.');
+      expect(mockDrawFunction).not.toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it('should alert when duty cycle is out of range for square wave', () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      elements.waveformTypeSelect.value = 'square';
+      elements.amplitudeInput.value = '0.5';
+      elements.minValueInput.value = '-0.5';
+      elements.cyclesInput.value = '1';
+      elements.dutyCycleInput.value = '150';
+
+      elements.generateWaveformBtn.click();
+
+      expect(alertSpy).toHaveBeenCalledWith('Duty Cycle must be between 0 and 100 for Square waves.');
+      expect(mockDrawFunction).not.toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it('should generate waveform with valid parameters', () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      // Ensure all values are valid
+      elements.waveformTypeSelect.value = 'sine';
+      elements.amplitudeInput.value = '0.5';
+      elements.minValueInput.value = '-0.5';
+      elements.cyclesInput.value = '1';
+
+      elements.generateWaveformBtn.click();
+
+      expect(alertSpy).not.toHaveBeenCalled();
+      expect(mockDrawFunction).toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+  });
+
   describe('mouse handler callbacks', () => {
     beforeEach(() => {
       uiManager.initializeElements();
@@ -353,6 +448,53 @@ describe('UIManager', () => {
 
       callbacks.updateZoom('v', 1.5);
       expect(elements.vZoomSlider.value).toBe('1.5');
+    });
+
+    it('should handle vShift update when canvas is null', () => {
+      // Set canvas to null
+      uiManager.canvas = null;
+      const callbacks = uiManager.getMouseHandlerCallbacks();
+
+      // Should not throw and should pass through vShift
+      callbacks.updateState({ vShift: 50 });
+      expect(state.vShift).toBe(50);
+    });
+
+    it('should handle updateZoom when hZoomSlider is null', () => {
+      uiManager.hZoomSlider = null;
+      const callbacks = uiManager.getMouseHandlerCallbacks();
+
+      // Should not throw, just return early
+      expect(() => callbacks.updateZoom('h', 2.5)).not.toThrow();
+    });
+
+    it('should handle updateZoom when vZoomSlider is null', () => {
+      uiManager.vZoomSlider = null;
+      const callbacks = uiManager.getMouseHandlerCallbacks();
+
+      // Should not throw, just return early
+      expect(() => callbacks.updateZoom('v', 2.5)).not.toThrow();
+    });
+
+    it('should clamp zoom values to slider min/max', () => {
+      const callbacks = uiManager.getMouseHandlerCallbacks();
+
+      // Try to set zoom below minimum
+      callbacks.updateZoom('h', 0.05); // Below min of 0.1
+      expect(parseFloat(elements.hZoomSlider.value)).toBe(0.1);
+
+      // Try to set zoom above maximum
+      callbacks.updateZoom('v', 15); // Above max of 10
+      expect(parseFloat(elements.vZoomSlider.value)).toBe(10);
+    });
+
+    it('should pass through waveformData unchanged in updateState callback', () => {
+      const callbacks = uiManager.getMouseHandlerCallbacks();
+      const testData = new Float32Array(WAVEFORM_POINTS).fill(0.5);
+
+      callbacks.updateState({ waveformData: testData });
+
+      expect(state.waveformData).toEqual(testData);
     });
   });
 });

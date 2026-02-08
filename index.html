@@ -29,8 +29,10 @@
           <option value="square">Square</option>
           <option value="triangle">Triangle</option>
       </select>
-      <label for="amplitude">Amp:</label>
-      <input type="number" id="amplitude" value="1.0" step="0.1" min="0" max="1.0" title="Waveform Amplitude (between -1.0 and 1.0)">
+      <label for="amplitude">Max:</label>
+      <input type="number" id="amplitude" value="1.0" step="0.1" min="-1" max="1" title="Maximum value (between -1.0 and 1.0)">
+      <label for="min-value">Min:</label>
+      <input type="number" id="min-value" value="-1.0" step="0.1" min="-1" max="1" title="Minimum value (between -1.0 and 1.0)">
       <label for="cycles">Cyc:</label>
       <input type="number" id="cycles" value="1" step="1" min="1" title="Number of Cycles">
       <label for="duty-cycle">Duty:</label>
