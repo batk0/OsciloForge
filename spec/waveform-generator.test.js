@@ -36,6 +36,11 @@ describe('Waveform Generator', () => {
       // Trough should be at min
       expect(result[WAVEFORM_POINTS * 3 / 4]).toBeCloseTo(min);
     });
+
+    it('should throw RangeError for cycles <= 0', () => {
+      expect(() => generateSineWave(-1, 1, 0, WAVEFORM_POINTS)).toThrow(RangeError);
+      expect(() => generateSineWave(-1, 1, -1, WAVEFORM_POINTS)).toThrow(RangeError);
+    });
   });
 
   describe('generateSquareWave', () => {

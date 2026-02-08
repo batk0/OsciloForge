@@ -1,4 +1,7 @@
 export function generateSineWave(min, max, cycles, points) {
+  if (cycles <= 0) {
+    throw new RangeError('cycles must be > 0');
+  }
   const data = new Float32Array(points);
   const midpoint = (max + min) / 2;
   const amplitude = (max - min) / 2;
