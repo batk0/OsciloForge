@@ -49,7 +49,8 @@ describe('UIManager', () => {
       cyclesInput: createMockElement('cycles', 'input'),
       dutyCycleInput: createMockElement('duty-cycle', 'input'),
       generateWaveformBtn: createMockElement('generate-waveform-btn', 'button'),
-      downloadDeviceBtn: createMockElement('download-device-btn', 'button')
+      downloadDeviceBtn: createMockElement('download-device-btn', 'button'),
+      zoomResetBtn: createMockElement('zoom-reset-btn', 'button')
     };
 
     // Configure mock elements
@@ -132,6 +133,7 @@ describe('UIManager', () => {
     it('should set up event listeners', () => {
       const setupShiftListenersSpy = vi.spyOn(uiManager, 'setupShiftListeners');
       const setupZoomListenersSpy = vi.spyOn(uiManager, 'setupZoomListeners');
+      const setupZoomResetListenerSpy = vi.spyOn(uiManager, 'setupZoomResetListener');
       const setupDrawStyleListenersSpy = vi.spyOn(uiManager, 'setupDrawStyleListeners');
       const setupEditModeListenersSpy = vi.spyOn(uiManager, 'setupEditModeListeners');
       const setupFileOperationListenersSpy = vi.spyOn(uiManager, 'setupFileOperationListeners');
@@ -144,6 +146,7 @@ describe('UIManager', () => {
 
       expect(setupShiftListenersSpy).toHaveBeenCalled();
       expect(setupZoomListenersSpy).toHaveBeenCalled();
+      expect(setupZoomResetListenerSpy).toHaveBeenCalled();
       expect(setupDrawStyleListenersSpy).toHaveBeenCalled();
       expect(setupEditModeListenersSpy).toHaveBeenCalled();
       expect(setupFileOperationListenersSpy).toHaveBeenCalled();
@@ -226,6 +229,66 @@ describe('UIManager', () => {
 
       expect(state.vZoom).toBe(newZoom);
       expect(mockDrawFunction).toHaveBeenCalled();
+    });
+  });
+
+  describe('zoom reset', () => {
+    beforeEach(() => {
+      uiManager.initializeElements();
+      uiManager.setupZoomResetListener();
+    });
+
+    it('should reset hZoom to 1 when zoom reset button is clicked', () => {
+      updateState({ hZoom: 5 });
+      elements.hZoomSlider.value = '5';
+
+      elements.zoomResetBtn.click();
+
+      expect(state.hZoom).toBe(1);
+      expect(elements.hZoomSlider.value).toBe('1');
+      expect(mockDrawFunction).toHaveBeenCalled();
+    });
+
+    it('should reset vZoom to 1 when zoom reset button is clicked', () => {
+      updateState({ vZoom: 5 });
+      elements.vZoomSlider.value = '5';
+
+      elements.zoomResetBtn.click();
+
+      expect(state.vZoom).toBe(1);
+      expect(elements.vZoomSlider.value).toBe('1');
+      expect(mockDrawFunction).toHaveBeenCalled();
+    });
+
+    it('should reset viewOffset to 0 when zoom reset button is clicked', () => {
+      updateState({ viewOffset: 100 });
+
+      elements.zoomResetBtn.click();
+
+      expect(state.viewOffset).toBe(0);
+      expect(mockDrawFunction).toHaveBeenCalled();
+    });
+
+    it('should reset vShift to 0 when zoom reset button is clicked', () => {
+      updateState({ vShift: 50 });
+
+      elements.zoomResetBtn.click();
+
+      expect(state.vShift).toBe(0);
+      expect(mockDrawFunction).toHaveBeenCalled();
+    });
+
+    it('should preserve waveform data when zoom reset button is clicked', () => {
+      const testData = new Float32Array(WAVEFORM_POINTS).fill(0.5);
+      updateState({
+        waveformData: testData,
+        lastLoadedWaveformData: new Float32Array(testData)
+      });
+
+      elements.zoomResetBtn.click();
+
+      expect(state.waveformData).toEqual(testData);
+      expect(state.lastLoadedWaveformData).toEqual(testData);
     });
   });
 

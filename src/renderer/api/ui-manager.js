@@ -28,6 +28,7 @@ export class UIManager {
     this.dutyCycleInput = null;
     this.generateWaveformBtn = null;
     this.downloadDeviceBtn = null;
+    this.zoomResetBtn = null;
   }
 
   initializeElements() {
@@ -49,11 +50,13 @@ export class UIManager {
     this.dutyCycleInput = document.getElementById('duty-cycle');
     this.generateWaveformBtn = document.getElementById('generate-waveform-btn');
     this.downloadDeviceBtn = document.getElementById('download-device-btn');
+    this.zoomResetBtn = document.getElementById('zoom-reset-btn');
   }
 
   setupEventListeners() {
     this.setupShiftListeners();
     this.setupZoomListeners();
+    this.setupZoomResetListener();
     this.setupDrawStyleListeners();
     this.setupEditModeListeners();
     this.setupFileOperationListeners();
@@ -139,6 +142,32 @@ export class UIManager {
         vZoom: newVZoom,
         vShift: Math.max(-maxPixelShift, Math.min(maxPixelShift, this.state.vShift))
       });
+      this.draw();
+    });
+  }
+
+  setupZoomResetListener() {
+    if (!this.zoomResetBtn) {
+      return;
+    }
+
+    this.zoomResetBtn.addEventListener('click', () => {
+      // Reset zoom sliders
+      if (this.hZoomSlider) {
+        this.hZoomSlider.value = 1;
+      }
+      if (this.vZoomSlider) {
+        this.vZoomSlider.value = 1;
+      }
+
+      // Update state with reset zoom and offsets
+      this.updateState({
+        hZoom: 1,
+        vZoom: 1,
+        viewOffset: 0,
+        vShift: 0
+      });
+
       this.draw();
     });
   }
