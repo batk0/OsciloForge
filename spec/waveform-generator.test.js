@@ -598,6 +598,21 @@ describe('Waveform Generator', () => {
         expect(result[i]).toBeCloseTo(min);
       }
     });
+
+    it('should handle min === max (zero amplitude) edge case', () => {
+      const min = 0.5;
+      const max = 0.5;
+      const cycles = 1;
+      const direction = 'up';
+      const dutyCycle = 100;
+
+      const result = generateExponentialWave(min, max, cycles, direction, dutyCycle);
+
+      // All values should be at min (which equals max) when amplitude is 0
+      for (let i = 0; i < result.length; i++) {
+        expect(result[i]).toBeCloseTo(0.5);
+      }
+    });
   });
 
   describe('generateNoise', () => {
