@@ -14,7 +14,7 @@ Use subagents for git and GitHub operations when:
 - Reviewing complex changes across multiple files
 - Checking git status and comparing branches
 
-The `task` tool with `subagent_type: 'git'` should be used for all git commands and GitHub CLI operations.
+The `task` tool with `subagent_type: 'git-ops'` should be used for all git commands and GitHub CLI operations.
 
 ## Build, Test, and Lint Commands
 

@@ -50,3 +50,63 @@ export function generateTriangleWave(min, max, cycles, points) {
   }
   return data;
 }
+
+export function generateRampWave(min, max, cycles, direction, points) {
+  if (cycles <= 0) {
+    throw new RangeError('cycles must be > 0');
+  }
+  const data = new Float32Array(points);
+  const periodPoints = points / cycles;
+
+  for (let i = 0; i < points; i++) {
+    const phaseInPeriod = i % periodPoints;
+    const phase = phaseInPeriod / periodPoints; // Normalized phase 0-1
+
+    if (direction === 'up') {
+      // Linear ramp from min to max
+      data[i] = min + (max - min) * phase;
+    } else {
+      // Linear ramp from max to min
+      data[i] = max - (max - min) * phase;
+    }
+  }
+  return data;
+}
+
+export function generateExponentialWave(min, max, cycles, direction, points) {
+  if (cycles <= 0) {
+    throw new RangeError('cycles must be > 0');
+  }
+  const data = new Float32Array(points);
+  const periodPoints = points / cycles;
+  const amplitude = max - min;
+
+  for (let i = 0; i < points; i++) {
+    const phaseInPeriod = i % periodPoints;
+    const phase = phaseInPeriod / periodPoints; // Normalized phase 0-1
+
+    if (direction === 'up') {
+      // Exponential curve from min to max using exp
+      // Use exp(phase * ln(2)) - this gives a nice exponential curve
+      // that goes from min to max over the phase
+      data[i] = min + amplitude * (Math.exp(phase * Math.log(amplitude + 1)) - 1) / (Math.exp(Math.log(amplitude + 1)) - 1);
+    } else {
+      // Exponential curve from max to min
+      data[i] = max - amplitude * (Math.exp(phase * Math.log(amplitude + 1)) - 1) / (Math.exp(Math.log(amplitude + 1)) - 1);
+    }
+  }
+  return data;
+}
+
+export function generateNoise(amplitude, points) {
+  const data = new Float32Array(points);
+  // Amplitude represents the range from -amplitude to +amplitude
+  const min = -amplitude;
+  const max = amplitude;
+
+  for (let i = 0; i < points; i++) {
+    // Generate random values between min and max
+    data[i] = min + Math.random() * (max - min);
+  }
+  return data;
+}

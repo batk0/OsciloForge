@@ -389,7 +389,7 @@ describe('UIManager', () => {
 
       elements.generateWaveformBtn.click();
 
-      expect(alertSpy).toHaveBeenCalledWith('Duty Cycle must be between 0 and 100 for Square waves.');
+      expect(alertSpy).toHaveBeenCalledWith('Duty Cycle must be between 0 and 100 for Square, Triangle, Ramp, and Exponential waves.');
       expect(mockDrawFunction).not.toHaveBeenCalled();
       alertSpy.mockRestore();
     });

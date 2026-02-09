@@ -327,7 +327,7 @@ describe('UIManager Integration', () => {
 
       uiManager.generateWaveformBtn.click();
 
-      expect(alertSpy).toHaveBeenCalledWith('Duty Cycle must be between 0 and 100 for Square waves.');
+      expect(alertSpy).toHaveBeenCalledWith('Duty Cycle must be between 0 and 100 for Square, Triangle, Ramp, and Exponential waves.');
       alertSpy.mockRestore();
     });
 
@@ -342,7 +342,7 @@ describe('UIManager Integration', () => {
 
       uiManager.generateWaveformBtn.click();
 
-      expect(alertSpy).toHaveBeenCalledWith('Duty Cycle must be between 0 and 100 for Square waves.');
+      expect(alertSpy).toHaveBeenCalledWith('Duty Cycle must be between 0 and 100 for Square, Triangle, Ramp, and Exponential waves.');
       alertSpy.mockRestore();
     });
 
@@ -400,6 +400,7 @@ describe('UIManager Integration', () => {
       uiManager.amplitudeInput.value = '0.5';
       uiManager.minValueInput.value = '-0.5';
       uiManager.cyclesInput.value = '1';
+      uiManager.dutyCycleInput.value = '50'; // Add valid duty cycle for triangle
       const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
 
       uiManager.generateWaveformBtn.click();

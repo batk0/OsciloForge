@@ -1,4 +1,4 @@
-import { generateSineWave, generateSquareWave, generateTriangleWave } from './waveform-generator.js';
+import { generateSineWave, generateSquareWave, generateTriangleWave, generateRampWave, generateExponentialWave, generateNoise } from './waveform-generator.js';
 import { WAVEFORM_POINTS, TOP_PADDING, BOTTOM_PADDING } from './state.js';
 
 export class UIManager {
@@ -288,8 +288,8 @@ export class UIManager {
         alert('Cycles must be a positive integer.');
         return;
       }
-      if (type === 'square' && (isNaN(dutyCycle) || dutyCycle < 0 || dutyCycle > 100)) {
-        alert('Duty Cycle must be between 0 and 100 for Square waves.');
+      if ((type === 'square' || type === 'triangle' || type === 'ramp' || type === 'ramp-down' || type === 'exponential' || type === 'exponential-down') && (isNaN(dutyCycle) || dutyCycle < 0 || dutyCycle > 100)) {
+        alert('Duty Cycle must be between 0 and 100 for Square, Triangle, Ramp, and Exponential waves.');
         return;
       }
 
@@ -304,6 +304,23 @@ export class UIManager {
         case 'triangle':
           newWaveformData = generateTriangleWave(min, max, cycles, WAVEFORM_POINTS);
           break;
+        case 'ramp':
+          newWaveformData = generateRampWave(min, max, cycles, 'up', WAVEFORM_POINTS);
+          break;
+        case 'ramp-down':
+          newWaveformData = generateRampWave(min, max, cycles, 'down', WAVEFORM_POINTS);
+          break;
+        case 'exponential':
+          newWaveformData = generateExponentialWave(min, max, cycles, 'up', WAVEFORM_POINTS);
+          break;
+        case 'exponential-down':
+          newWaveformData = generateExponentialWave(min, max, cycles, 'down', WAVEFORM_POINTS);
+          break;
+        case 'noise': {
+          const amplitude = (max - min) / 2;
+          newWaveformData = generateNoise(amplitude, WAVEFORM_POINTS);
+          break;
+        }
         default:
           return;
       }
