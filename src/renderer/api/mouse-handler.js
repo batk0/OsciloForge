@@ -21,15 +21,30 @@ export class MouseHandler {
     this.dragStartHZoom = 1;
     this.dragStartVZoom = 1;
 
+    // Store bound function references for proper cleanup
+    this._handleMouseDown = this.handleMouseDown.bind(this);
+    this._handleMouseUp = this.handleMouseUp.bind(this);
+    this._handleMouseLeave = this.handleMouseLeave.bind(this);
+    this._handleMouseMove = this.handleMouseMove.bind(this);
+    this._handleContextMenu = this.handleContextMenu.bind(this);
+
     this.init();
   }
 
   init() {
-    this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
-    this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
-    this.canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
-    this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
-    this.canvas.addEventListener('contextmenu', this.handleContextMenu.bind(this));
+    this.canvas.addEventListener('mousedown', this._handleMouseDown);
+    this.canvas.addEventListener('mouseup', this._handleMouseUp);
+    this.canvas.addEventListener('mouseleave', this._handleMouseLeave);
+    this.canvas.addEventListener('mousemove', this._handleMouseMove);
+    this.canvas.addEventListener('contextmenu', this._handleContextMenu);
+  }
+
+  destroy() {
+    this.canvas.removeEventListener('mousedown', this._handleMouseDown);
+    this.canvas.removeEventListener('mouseup', this._handleMouseUp);
+    this.canvas.removeEventListener('mouseleave', this._handleMouseLeave);
+    this.canvas.removeEventListener('mousemove', this._handleMouseMove);
+    this.canvas.removeEventListener('contextmenu', this._handleContextMenu);
   }
 
   handleMouseDown(e) {

@@ -89,82 +89,151 @@ describe('Waveform Generator', () => {
       const min = -1.0;
       const max = 1.0;
       const cycles = 1;
+      const dutyCycle = 50;
 
-      const result = generateTriangleWave(min, max, cycles, WAVEFORM_POINTS);
+      const result = generateTriangleWave(min, max, cycles, dutyCycle, WAVEFORM_POINTS);
 
       expect(result).toBeInstanceOf(Float32Array);
       expect(result.length).toBe(WAVEFORM_POINTS);
 
       // Check a few points
       expect(result[0]).toBeCloseTo(min);
-      expect(result[WAVEFORM_POINTS / 4]).toBeCloseTo(max);
-      expect(result[WAVEFORM_POINTS / 2]).toBeCloseTo(min);
-      expect(result[WAVEFORM_POINTS * 3 / 4]).toBeCloseTo(max);
+      // With 50% duty cycle, should reach max at half period
+      expect(result[WAVEFORM_POINTS / 2]).toBeCloseTo(max);
+      // Should be back at min at end of period
+      expect(result[WAVEFORM_POINTS - 1]).toBeCloseTo(min);
     });
 
     it('should support asymmetric waveforms with different min and max', () => {
       const min = -0.2;
       const max = 0.8;
       const cycles = 1;
+      const dutyCycle = 50;
 
-      const result = generateTriangleWave(min, max, cycles, WAVEFORM_POINTS);
+      const result = generateTriangleWave(min, max, cycles, dutyCycle, WAVEFORM_POINTS);
 
-      // Peak should be at max
-      expect(result[WAVEFORM_POINTS / 4]).toBeCloseTo(max);
-      // Trough should be at min
-      expect(result[WAVEFORM_POINTS / 2]).toBeCloseTo(min);
+      // Start should be at min
       expect(result[0]).toBeCloseTo(min);
+      // With 50% duty cycle, should reach max at half period
+      expect(result[WAVEFORM_POINTS / 2]).toBeCloseTo(max);
+      // Should be back at min at end of period
+      expect(result[WAVEFORM_POINTS - 1]).toBeCloseTo(min);
     });
 
     it('should throw RangeError for cycles <= 0', () => {
-      expect(() => generateTriangleWave(-1, 1, 0, WAVEFORM_POINTS)).toThrow(RangeError);
-      expect(() => generateTriangleWave(-1, 1, -1, WAVEFORM_POINTS)).toThrow(RangeError);
+      expect(() => generateTriangleWave(-1, 1, 0, 50, WAVEFORM_POINTS)).toThrow(RangeError);
+      expect(() => generateTriangleWave(-1, 1, -1, 50, WAVEFORM_POINTS)).toThrow(RangeError);
+    });
+
+    it('should throw RangeError for dutyCycle outside 0-100', () => {
+      expect(() => generateTriangleWave(-1, 1, 1, -1, WAVEFORM_POINTS)).toThrow(RangeError);
+      expect(() => generateTriangleWave(-1, 1, 1, 101, WAVEFORM_POINTS)).toThrow(RangeError);
+    });
+
+    it('should support 50% duty cycle (symmetric triangle)', () => {
+      const min = -1.0;
+      const max = 1.0;
+      const cycles = 1;
+      const dutyCycle = 50;
+
+      const result = generateTriangleWave(min, max, cycles, dutyCycle, WAVEFORM_POINTS);
+
+      expect(result).toBeInstanceOf(Float32Array);
+      expect(result.length).toBe(WAVEFORM_POINTS);
+
+      // With 50% duty cycle, should reach max at half period
+      expect(result[WAVEFORM_POINTS / 2]).toBeCloseTo(max);
+      // Should return to min at end of period
+      expect(result[WAVEFORM_POINTS - 1]).toBeCloseTo(min);
+    });
+
+    it('should support duty cycle < 50% (asymmetric with longer rise)', () => {
+      const min = -1.0;
+      const max = 1.0;
+      const cycles = 1;
+      const dutyCycle = 25;
+
+      const result = generateTriangleWave(min, max, cycles, dutyCycle, WAVEFORM_POINTS);
+
+      // With 25% duty cycle, should reach max at 1/4 period
+      expect(result[WAVEFORM_POINTS / 4]).toBeCloseTo(max);
+      // Should start falling back down immediately after
+      expect(result[WAVEFORM_POINTS / 4 + 1]).toBeLessThan(max);
+    });
+
+    it('should support duty cycle > 50% (asymmetric with longer fall)', () => {
+      const min = -1.0;
+      const max = 1.0;
+      const cycles = 1;
+      const dutyCycle = 75;
+
+      const result = generateTriangleWave(min, max, cycles, dutyCycle, WAVEFORM_POINTS);
+
+      // With 75% duty cycle, should still be rising at 3/4 period
+      expect(result[WAVEFORM_POINTS * 3 / 4]).toBeCloseTo(max);
     });
 
     it('should handle multiple cycles correctly', () => {
       const min = -0.5;
       const max = 0.5;
       const cycles = 4;
+      const dutyCycle = 50;
 
-      const result = generateTriangleWave(min, max, cycles, WAVEFORM_POINTS);
+      const result = generateTriangleWave(min, max, cycles, dutyCycle, WAVEFORM_POINTS);
 
       expect(result).toBeInstanceOf(Float32Array);
       expect(result.length).toBe(WAVEFORM_POINTS);
 
       // At start should be at min
       expect(result[0]).toBeCloseTo(min);
-      // At 1/4 of first period should be at max
-      expect(result[WAVEFORM_POINTS / (4 * cycles)]).toBeCloseTo(max);
-      // At 1/2 of first period should be at min
-      expect(result[WAVEFORM_POINTS / (2 * cycles)]).toBeCloseTo(min);
+      // At 1/2 of first period should be at max
+      expect(result[WAVEFORM_POINTS / (2 * cycles)]).toBeCloseTo(max);
+      // At end of first period should be at min
+      expect(result[WAVEFORM_POINTS / cycles - 1]).toBeCloseTo(min);
     });
 
     it('should handle very small min/max range', () => {
       const min = -0.001;
       const max = 0.001;
       const cycles = 1;
+      const dutyCycle = 50;
 
-      const result = generateTriangleWave(min, max, cycles, WAVEFORM_POINTS);
+      const result = generateTriangleWave(min, max, cycles, dutyCycle, WAVEFORM_POINTS);
 
       expect(result).toBeInstanceOf(Float32Array);
-      // Peak should be at max
-      expect(result[WAVEFORM_POINTS / 4]).toBeCloseTo(max);
-      // Trough should be at min
-      expect(result[WAVEFORM_POINTS / 2]).toBeCloseTo(min);
+      // Start should be at min
+      expect(result[0]).toBeCloseTo(min);
+      // With 50% duty cycle, at half period should be at max
+      expect(result[WAVEFORM_POINTS / 2]).toBeCloseTo(max);
     });
 
     it('should handle extreme min/max values', () => {
       const min = -1.0;
       const max = 1.0;
       const cycles = 1;
+      const dutyCycle = 50;
 
-      const result = generateTriangleWave(min, max, cycles, WAVEFORM_POINTS);
+      const result = generateTriangleWave(min, max, cycles, dutyCycle, WAVEFORM_POINTS);
 
       expect(result).toBeInstanceOf(Float32Array);
-      // Peak should be at max
-      expect(result[WAVEFORM_POINTS / 4]).toBeCloseTo(max);
-      // Trough should be at min
-      expect(result[WAVEFORM_POINTS / 2]).toBeCloseTo(min);
+      // Start should be at min
+      expect(result[0]).toBeCloseTo(min);
+      // With 50% duty cycle, at half period should be at max
+      expect(result[WAVEFORM_POINTS / 2]).toBeCloseTo(max);
+    });
+
+    it('should handle dutyCycle === 0 edge case', () => {
+      const min = -1.0;
+      const max = 1.0;
+      const cycles = 1;
+      const dutyCycle = 0;
+
+      const result = generateTriangleWave(min, max, cycles, dutyCycle, WAVEFORM_POINTS);
+
+      // All values should be at min when dutyCycle is 0
+      for (let i = 0; i < result.length; i++) {
+        expect(result[i]).toBeCloseTo(min);
+      }
     });
   });
 
@@ -248,8 +317,9 @@ describe('Waveform Generator', () => {
       const max = 0.5;
       const cycles = 2;
       const direction = 'up';
+      const dutyCycle = 100;
 
-      const result = generateRampWave(min, max, cycles, direction, WAVEFORM_POINTS);
+      const result = generateRampWave(min, max, cycles, direction, dutyCycle, WAVEFORM_POINTS);
 
       expect(result).toBeInstanceOf(Float32Array);
       expect(result.length).toBe(WAVEFORM_POINTS);
@@ -267,8 +337,9 @@ describe('Waveform Generator', () => {
       const max = 1.0;
       const cycles = 1;
       const direction = 'up';
+      const dutyCycle = 100;
 
-      const result = generateRampWave(min, max, cycles, direction, WAVEFORM_POINTS);
+      const result = generateRampWave(min, max, cycles, direction, dutyCycle, WAVEFORM_POINTS);
 
       // Start should be at min
       expect(result[0]).toBeCloseTo(min);
@@ -281,8 +352,9 @@ describe('Waveform Generator', () => {
       const max = 1.0;
       const cycles = 1;
       const direction = 'down';
+      const dutyCycle = 100;
 
-      const result = generateRampWave(min, max, cycles, direction, WAVEFORM_POINTS);
+      const result = generateRampWave(min, max, cycles, direction, dutyCycle, WAVEFORM_POINTS);
 
       // Start should be at max
       expect(result[0]).toBeCloseTo(max);
@@ -295,8 +367,9 @@ describe('Waveform Generator', () => {
       const max = 0.8;
       const cycles = 1;
       const direction = 'up';
+      const dutyCycle = 100;
 
-      const result = generateRampWave(min, max, cycles, direction, WAVEFORM_POINTS);
+      const result = generateRampWave(min, max, cycles, direction, dutyCycle, WAVEFORM_POINTS);
 
       // Start should be at min
       expect(result[0]).toBeCloseTo(min);
@@ -305,8 +378,59 @@ describe('Waveform Generator', () => {
     });
 
     it('should throw RangeError for cycles <= 0', () => {
-      expect(() => generateRampWave(-1, 1, 0, 'up', WAVEFORM_POINTS)).toThrow(RangeError);
-      expect(() => generateRampWave(-1, 1, -1, 'up', WAVEFORM_POINTS)).toThrow(RangeError);
+      expect(() => generateRampWave(-1, 1, 0, 'up', 50, WAVEFORM_POINTS)).toThrow(RangeError);
+      expect(() => generateRampWave(-1, 1, -1, 'up', 50, WAVEFORM_POINTS)).toThrow(RangeError);
+    });
+
+    it('should throw RangeError for dutyCycle outside 0-100', () => {
+      expect(() => generateRampWave(-1, 1, 1, 'up', -1, WAVEFORM_POINTS)).toThrow(RangeError);
+      expect(() => generateRampWave(-1, 1, 1, 'up', 101, WAVEFORM_POINTS)).toThrow(RangeError);
+    });
+
+    it('should support 50% duty cycle for ramp up', () => {
+      const min = 0.0;
+      const max = 1.0;
+      const cycles = 1;
+      const direction = 'up';
+      const dutyCycle = 50;
+
+      const result = generateRampWave(min, max, cycles, direction, dutyCycle, WAVEFORM_POINTS);
+
+      // With 50% duty cycle, should reach max at half period
+      expect(result[WAVEFORM_POINTS / 2 - 1]).toBeCloseTo(max);
+      // Should hold at max for second half
+      expect(result[WAVEFORM_POINTS / 2]).toBeCloseTo(max);
+      expect(result[WAVEFORM_POINTS - 1]).toBeCloseTo(max);
+    });
+
+    it('should support 25% duty cycle for ramp up', () => {
+      const min = 0.0;
+      const max = 1.0;
+      const cycles = 1;
+      const direction = 'up';
+      const dutyCycle = 25;
+
+      const result = generateRampWave(min, max, cycles, direction, dutyCycle, WAVEFORM_POINTS);
+
+      // With 25% duty cycle, should reach max at 1/4 period
+      expect(result[WAVEFORM_POINTS / 4 - 1]).toBeCloseTo(max);
+      // Should hold at max for remaining 75%
+      expect(result[WAVEFORM_POINTS / 4]).toBeCloseTo(max);
+    });
+
+    it('should support duty cycle for ramp down', () => {
+      const min = 0.0;
+      const max = 1.0;
+      const cycles = 1;
+      const direction = 'down';
+      const dutyCycle = 50;
+
+      const result = generateRampWave(min, max, cycles, direction, dutyCycle, WAVEFORM_POINTS);
+
+      // With 50% duty cycle, should reach min at half period
+      expect(result[WAVEFORM_POINTS / 2 - 1]).toBeCloseTo(min);
+      // Should hold at min for second half
+      expect(result[WAVEFORM_POINTS / 2]).toBeCloseTo(min);
     });
 
     it('should handle multiple cycles correctly', () => {
@@ -314,8 +438,9 @@ describe('Waveform Generator', () => {
       const max = 0.5;
       const cycles = 4;
       const direction = 'up';
+      const dutyCycle = 100;
 
-      const result = generateRampWave(min, max, cycles, direction, WAVEFORM_POINTS);
+      const result = generateRampWave(min, max, cycles, direction, dutyCycle, WAVEFORM_POINTS);
 
       expect(result).toBeInstanceOf(Float32Array);
       expect(result.length).toBe(WAVEFORM_POINTS);
@@ -323,6 +448,21 @@ describe('Waveform Generator', () => {
       // Should have 4 complete ramps
       expect(result[0]).toBeCloseTo(min);
       expect(result[WAVEFORM_POINTS / 2]).toBeCloseTo(min);
+    });
+
+    it('should handle dutyCycle === 0 edge case', () => {
+      const min = -1.0;
+      const max = 1.0;
+      const cycles = 1;
+      const direction = 'up';
+      const dutyCycle = 0;
+
+      const result = generateRampWave(min, max, cycles, direction, dutyCycle, WAVEFORM_POINTS);
+
+      // All values should be at min when dutyCycle is 0
+      for (let i = 0; i < result.length; i++) {
+        expect(result[i]).toBeCloseTo(min);
+      }
     });
   });
 
@@ -332,8 +472,9 @@ describe('Waveform Generator', () => {
       const max = 0.5;
       const cycles = 2;
       const direction = 'up';
+      const dutyCycle = 100;
 
-      const result = generateExponentialWave(min, max, cycles, direction, WAVEFORM_POINTS);
+      const result = generateExponentialWave(min, max, cycles, direction, dutyCycle, WAVEFORM_POINTS);
 
       expect(result).toBeInstanceOf(Float32Array);
       expect(result.length).toBe(WAVEFORM_POINTS);
@@ -349,8 +490,9 @@ describe('Waveform Generator', () => {
       const max = 1.0;
       const cycles = 1;
       const direction = 'up';
+      const dutyCycle = 100;
 
-      const result = generateExponentialWave(min, max, cycles, direction, WAVEFORM_POINTS);
+      const result = generateExponentialWave(min, max, cycles, direction, dutyCycle, WAVEFORM_POINTS);
 
       // Start should be at min
       expect(result[0]).toBeCloseTo(min);
@@ -363,8 +505,9 @@ describe('Waveform Generator', () => {
       const max = 1.0;
       const cycles = 1;
       const direction = 'down';
+      const dutyCycle = 100;
 
-      const result = generateExponentialWave(min, max, cycles, direction, WAVEFORM_POINTS);
+      const result = generateExponentialWave(min, max, cycles, direction, dutyCycle, WAVEFORM_POINTS);
 
       // Start should be at max
       expect(result[0]).toBeCloseTo(max);
@@ -373,8 +516,59 @@ describe('Waveform Generator', () => {
     });
 
     it('should throw RangeError for cycles <= 0', () => {
-      expect(() => generateExponentialWave(-1, 1, 0, 'up', WAVEFORM_POINTS)).toThrow(RangeError);
-      expect(() => generateExponentialWave(-1, 1, -1, 'up', WAVEFORM_POINTS)).toThrow(RangeError);
+      expect(() => generateExponentialWave(-1, 1, 0, 'up', 50, WAVEFORM_POINTS)).toThrow(RangeError);
+      expect(() => generateExponentialWave(-1, 1, -1, 'up', 50, WAVEFORM_POINTS)).toThrow(RangeError);
+    });
+
+    it('should throw RangeError for dutyCycle outside 0-100', () => {
+      expect(() => generateExponentialWave(-1, 1, 1, 'up', -1, WAVEFORM_POINTS)).toThrow(RangeError);
+      expect(() => generateExponentialWave(-1, 1, 1, 'up', 101, WAVEFORM_POINTS)).toThrow(RangeError);
+    });
+
+    it('should support 50% duty cycle for exponential up', () => {
+      const min = 0.0;
+      const max = 1.0;
+      const cycles = 1;
+      const direction = 'up';
+      const dutyCycle = 50;
+
+      const result = generateExponentialWave(min, max, cycles, direction, dutyCycle, WAVEFORM_POINTS);
+
+      // With 50% duty cycle, should reach max at half period
+      expect(result[WAVEFORM_POINTS / 2 - 1]).toBeCloseTo(max);
+      // Should hold at max for second half
+      expect(result[WAVEFORM_POINTS / 2]).toBeCloseTo(max);
+      expect(result[WAVEFORM_POINTS - 1]).toBeCloseTo(max);
+    });
+
+    it('should support 25% duty cycle for exponential up', () => {
+      const min = 0.0;
+      const max = 1.0;
+      const cycles = 1;
+      const direction = 'up';
+      const dutyCycle = 25;
+
+      const result = generateExponentialWave(min, max, cycles, direction, dutyCycle, WAVEFORM_POINTS);
+
+      // With 25% duty cycle, should reach max at 1/4 period
+      expect(result[WAVEFORM_POINTS / 4 - 1]).toBeCloseTo(max);
+      // Should hold at max for remaining 75%
+      expect(result[WAVEFORM_POINTS / 4]).toBeCloseTo(max);
+    });
+
+    it('should support duty cycle for exponential down', () => {
+      const min = 0.0;
+      const max = 1.0;
+      const cycles = 1;
+      const direction = 'down';
+      const dutyCycle = 50;
+
+      const result = generateExponentialWave(min, max, cycles, direction, dutyCycle, WAVEFORM_POINTS);
+
+      // With 50% duty cycle, should reach min at half period
+      expect(result[WAVEFORM_POINTS / 2 - 1]).toBeCloseTo(min);
+      // Should hold at min for second half
+      expect(result[WAVEFORM_POINTS / 2]).toBeCloseTo(min);
     });
 
     it('should handle multiple cycles correctly', () => {
@@ -382,39 +576,58 @@ describe('Waveform Generator', () => {
       const max = 0.5;
       const cycles = 4;
       const direction = 'up';
+      const dutyCycle = 100;
 
-      const result = generateExponentialWave(min, max, cycles, direction, WAVEFORM_POINTS);
+      const result = generateExponentialWave(min, max, cycles, direction, dutyCycle, WAVEFORM_POINTS);
 
       expect(result).toBeInstanceOf(Float32Array);
       expect(result.length).toBe(WAVEFORM_POINTS);
+    });
+
+    it('should handle dutyCycle === 0 edge case', () => {
+      const min = -1.0;
+      const max = 1.0;
+      const cycles = 1;
+      const direction = 'up';
+      const dutyCycle = 0;
+
+      const result = generateExponentialWave(min, max, cycles, direction, dutyCycle, WAVEFORM_POINTS);
+
+      // All values should be at min when dutyCycle is 0
+      for (let i = 0; i < result.length; i++) {
+        expect(result[i]).toBeCloseTo(min);
+      }
     });
   });
 
   describe('generateNoise', () => {
     it('should return a Float32Array of correct length with noise data', () => {
-      const amplitude = 0.5;
+      const min = -0.5;
+      const max = 0.5;
 
-      const result = generateNoise(amplitude, WAVEFORM_POINTS);
+      const result = generateNoise(min, max, WAVEFORM_POINTS);
 
       expect(result).toBeInstanceOf(Float32Array);
       expect(result.length).toBe(WAVEFORM_POINTS);
     });
 
-    it('should generate values within amplitude range', () => {
-      const amplitude = 0.5;
-      const result = generateNoise(amplitude, WAVEFORM_POINTS);
+    it('should generate values within min/max range', () => {
+      const min = -0.5;
+      const max = 0.5;
+      const result = generateNoise(min, max, WAVEFORM_POINTS);
 
-      // All values should be between -amplitude and +amplitude
+      // All values should be between min and max
       for (let i = 0; i < result.length; i++) {
-        expect(result[i]).toBeGreaterThanOrEqual(-amplitude);
-        expect(result[i]).toBeLessThanOrEqual(amplitude);
+        expect(result[i]).toBeGreaterThanOrEqual(min);
+        expect(result[i]).toBeLessThanOrEqual(max);
       }
     });
 
     it('should generate different patterns on each call', () => {
-      const amplitude = 0.5;
-      const result1 = generateNoise(amplitude, WAVEFORM_POINTS);
-      const result2 = generateNoise(amplitude, WAVEFORM_POINTS);
+      const min = -0.5;
+      const max = 0.5;
+      const result1 = generateNoise(min, max, WAVEFORM_POINTS);
+      const result2 = generateNoise(min, max, WAVEFORM_POINTS);
 
       // Arrays should be different (very high probability with random data)
       let different = false;
@@ -427,34 +640,52 @@ describe('Waveform Generator', () => {
       expect(different).toBe(true);
     });
 
-    it('should handle zero amplitude', () => {
-      const amplitude = 0;
-      const result = generateNoise(amplitude, WAVEFORM_POINTS);
+    it('should handle zero range (min equals max)', () => {
+      const min = 0.5;
+      const max = 0.5;
+      const result = generateNoise(min, max, WAVEFORM_POINTS);
 
-      // All values should be 0 when amplitude is 0
+      // All values should be 0.5 when min equals max
       for (let i = 0; i < result.length; i++) {
-        expect(result[i]).toBeCloseTo(0);
+        expect(result[i]).toBeCloseTo(0.5);
       }
     });
 
-    it('should handle small amplitude', () => {
-      const amplitude = 0.001;
-      const result = generateNoise(amplitude, WAVEFORM_POINTS);
+    it('should handle small range', () => {
+      const min = -0.001;
+      const max = 0.001;
+      const result = generateNoise(min, max, WAVEFORM_POINTS);
 
-      // All values should be very small
+      // All values should be very small and within range
       for (let i = 0; i < result.length; i++) {
-        expect(Math.abs(result[i])).toBeLessThanOrEqual(amplitude);
+        expect(result[i]).toBeGreaterThanOrEqual(min);
+        expect(result[i]).toBeLessThanOrEqual(max);
       }
     });
 
-    it('should handle maximum amplitude', () => {
-      const amplitude = 1.0;
-      const result = generateNoise(amplitude, WAVEFORM_POINTS);
+    it('should handle full range', () => {
+      const min = -1.0;
+      const max = 1.0;
+      const result = generateNoise(min, max, WAVEFORM_POINTS);
 
       // All values should be between -1 and 1
       for (let i = 0; i < result.length; i++) {
         expect(result[i]).toBeGreaterThanOrEqual(-1);
         expect(result[i]).toBeLessThanOrEqual(1);
+      }
+    });
+
+    it('should handle inverted range (min > max)', () => {
+      const min = 1.0;
+      const max = -1.0;
+      const result = generateNoise(min, max, WAVEFORM_POINTS);
+
+      // All values should be between max and min (inverted range)
+      // When min > max, the formula becomes: max + Math.random() * (min - max)
+      // This should still generate valid values in the [max, min] range
+      for (let i = 0; i < result.length; i++) {
+        expect(result[i]).toBeGreaterThanOrEqual(max);
+        expect(result[i]).toBeLessThanOrEqual(min);
       }
     });
   });

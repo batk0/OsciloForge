@@ -302,25 +302,23 @@ export class UIManager {
           newWaveformData = generateSquareWave(min, max, cycles, dutyCycle, WAVEFORM_POINTS);
           break;
         case 'triangle':
-          newWaveformData = generateTriangleWave(min, max, cycles, WAVEFORM_POINTS);
+          newWaveformData = generateTriangleWave(min, max, cycles, dutyCycle, WAVEFORM_POINTS);
           break;
         case 'ramp':
-          newWaveformData = generateRampWave(min, max, cycles, 'up', WAVEFORM_POINTS);
+          newWaveformData = generateRampWave(min, max, cycles, 'up', dutyCycle, WAVEFORM_POINTS);
           break;
         case 'ramp-down':
-          newWaveformData = generateRampWave(min, max, cycles, 'down', WAVEFORM_POINTS);
+          newWaveformData = generateRampWave(min, max, cycles, 'down', dutyCycle, WAVEFORM_POINTS);
           break;
         case 'exponential':
-          newWaveformData = generateExponentialWave(min, max, cycles, 'up', WAVEFORM_POINTS);
+          newWaveformData = generateExponentialWave(min, max, cycles, 'up', dutyCycle, WAVEFORM_POINTS);
           break;
         case 'exponential-down':
-          newWaveformData = generateExponentialWave(min, max, cycles, 'down', WAVEFORM_POINTS);
+          newWaveformData = generateExponentialWave(min, max, cycles, 'down', dutyCycle, WAVEFORM_POINTS);
           break;
-        case 'noise': {
-          const amplitude = (max - min) / 2;
-          newWaveformData = generateNoise(amplitude, WAVEFORM_POINTS);
+        case 'noise':
+          newWaveformData = generateNoise(min, max, WAVEFORM_POINTS);
           break;
-        }
         default:
           return;
       }
@@ -347,6 +345,13 @@ export class UIManager {
   setupCanvas() {
     window.addEventListener('resize', this.draw);
     this.draw();
+  }
+
+  destroy() {
+    window.removeEventListener('resize', this.draw);
+    if (this.mouseHandler) {
+      this.mouseHandler.destroy();
+    }
   }
 
   initializeEditMode() {
