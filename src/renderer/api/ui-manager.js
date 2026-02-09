@@ -296,28 +296,28 @@ export class UIManager {
       let newWaveformData;
       switch (type) {
         case 'sine':
-          newWaveformData = generateSineWave(min, max, cycles, WAVEFORM_POINTS);
+          newWaveformData = generateSineWave(min, max, cycles);
           break;
         case 'square':
-          newWaveformData = generateSquareWave(min, max, cycles, dutyCycle, WAVEFORM_POINTS);
+          newWaveformData = generateSquareWave(min, max, cycles, dutyCycle);
           break;
         case 'triangle':
-          newWaveformData = generateTriangleWave(min, max, cycles, dutyCycle, WAVEFORM_POINTS);
+          newWaveformData = generateTriangleWave(min, max, cycles, dutyCycle);
           break;
         case 'ramp':
-          newWaveformData = generateRampWave(min, max, cycles, 'up', dutyCycle, WAVEFORM_POINTS);
+          newWaveformData = generateRampWave(min, max, cycles, 'up', dutyCycle);
           break;
         case 'ramp-down':
-          newWaveformData = generateRampWave(min, max, cycles, 'down', dutyCycle, WAVEFORM_POINTS);
+          newWaveformData = generateRampWave(min, max, cycles, 'down', dutyCycle);
           break;
         case 'exponential':
-          newWaveformData = generateExponentialWave(min, max, cycles, 'up', dutyCycle, WAVEFORM_POINTS);
+          newWaveformData = generateExponentialWave(min, max, cycles, 'up', dutyCycle);
           break;
         case 'exponential-down':
-          newWaveformData = generateExponentialWave(min, max, cycles, 'down', dutyCycle, WAVEFORM_POINTS);
+          newWaveformData = generateExponentialWave(min, max, cycles, 'down', dutyCycle);
           break;
         case 'noise':
-          newWaveformData = generateNoise(min, max, WAVEFORM_POINTS);
+          newWaveformData = generateNoise(min, max);
           break;
         default:
           return;

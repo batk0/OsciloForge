@@ -1,48 +1,50 @@
-export function generateSineWave(min, max, cycles, points) {
+import { WAVEFORM_POINTS } from './state.js';
+
+export function generateSineWave(min, max, cycles) {
   if (cycles <= 0) {
     throw new RangeError('cycles must be > 0');
   }
-  const data = new Float32Array(points);
+  const data = new Float32Array(WAVEFORM_POINTS);
   const midpoint = (max + min) / 2;
   const amplitude = (max - min) / 2;
-  for (let i = 0; i < points; i++) {
-    data[i] = midpoint + amplitude * Math.sin(2 * Math.PI * cycles * (i / points));
+  for (let i = 0; i < WAVEFORM_POINTS; i++) {
+    data[i] = midpoint + amplitude * Math.sin(2 * Math.PI * cycles * (i / WAVEFORM_POINTS));
   }
   return data;
 }
 
-export function generateSquareWave(min, max, cycles, dutyCycle, points) {
+export function generateSquareWave(min, max, cycles, dutyCycle) {
   if (cycles <= 0) {
     throw new RangeError('cycles must be > 0');
   }
-  const data = new Float32Array(points);
-  const periodPoints = points / cycles;
+  const data = new Float32Array(WAVEFORM_POINTS);
+  const periodPoints = WAVEFORM_POINTS / cycles;
   const dutyPoints = periodPoints * (dutyCycle / 100);
-  for (let i = 0; i < points; i++) {
+  for (let i = 0; i < WAVEFORM_POINTS; i++) {
     const phaseInPeriod = i % periodPoints;
     data[i] = phaseInPeriod < dutyPoints ? max : min;
   }
   return data;
 }
 
-export function generateTriangleWave(min, max, cycles, dutyCycle, points) {
+export function generateTriangleWave(min, max, cycles, dutyCycle) {
   if (cycles <= 0) {
     throw new RangeError('cycles must be > 0');
   }
   if (dutyCycle < 0 || dutyCycle > 100) {
     throw new RangeError('dutyCycle must be between 0 and 100');
   }
-  const data = new Float32Array(points);
+  const data = new Float32Array(WAVEFORM_POINTS);
 
   // Handle dutyCycle === 0 edge case
   if (dutyCycle === 0) {
     data.fill(min);
     return data;
   }
-  const periodPoints = points / cycles;
+  const periodPoints = WAVEFORM_POINTS / cycles;
   const dutyPoints = periodPoints * (dutyCycle / 100);
 
-  for (let i = 0; i < points; i++) {
+  for (let i = 0; i < WAVEFORM_POINTS; i++) {
     const phaseInPeriod = i % periodPoints;
 
     if (dutyCycle <= 50) {
@@ -75,24 +77,24 @@ export function generateTriangleWave(min, max, cycles, dutyCycle, points) {
   return data;
 }
 
-export function generateRampWave(min, max, cycles, direction, dutyCycle, points) {
+export function generateRampWave(min, max, cycles, direction, dutyCycle) {
   if (cycles <= 0) {
     throw new RangeError('cycles must be > 0');
   }
   if (dutyCycle < 0 || dutyCycle > 100) {
     throw new RangeError('dutyCycle must be between 0 and 100');
   }
-  const data = new Float32Array(points);
+  const data = new Float32Array(WAVEFORM_POINTS);
 
   // Handle dutyCycle === 0 edge case
   if (dutyCycle === 0) {
     data.fill(min);
     return data;
   }
-  const periodPoints = points / cycles;
+  const periodPoints = WAVEFORM_POINTS / cycles;
   const dutyPoints = periodPoints * (dutyCycle / 100);
 
-  for (let i = 0; i < points; i++) {
+  for (let i = 0; i < WAVEFORM_POINTS; i++) {
     const phaseInPeriod = i % periodPoints;
 
     if (direction === 'up') {
@@ -114,21 +116,21 @@ export function generateRampWave(min, max, cycles, direction, dutyCycle, points)
   return data;
 }
 
-export function generateExponentialWave(min, max, cycles, direction, dutyCycle, points) {
+export function generateExponentialWave(min, max, cycles, direction, dutyCycle) {
   if (cycles <= 0) {
     throw new RangeError('cycles must be > 0');
   }
   if (dutyCycle < 0 || dutyCycle > 100) {
     throw new RangeError('dutyCycle must be between 0 and 100');
   }
-  const data = new Float32Array(points);
+  const data = new Float32Array(WAVEFORM_POINTS);
 
   // Handle dutyCycle === 0 edge case
   if (dutyCycle === 0) {
     data.fill(min);
     return data;
   }
-  const periodPoints = points / cycles;
+  const periodPoints = WAVEFORM_POINTS / cycles;
   const dutyPoints = periodPoints * (dutyCycle / 100);
   const amplitude = max - min;
 
@@ -143,7 +145,7 @@ export function generateExponentialWave(min, max, cycles, direction, dutyCycle, 
   // We want exp(k * 1) = amplitude, so k = ln(amplitude + 1)
   const expScale = Math.log(amplitude + 1);
 
-  for (let i = 0; i < points; i++) {
+  for (let i = 0; i < WAVEFORM_POINTS; i++) {
     const phaseInPeriod = i % periodPoints;
 
     if (direction === 'up') {
@@ -167,10 +169,10 @@ export function generateExponentialWave(min, max, cycles, direction, dutyCycle, 
   return data;
 }
 
-export function generateNoise(min, max, points) {
-  const data = new Float32Array(points);
+export function generateNoise(min, max) {
+  const data = new Float32Array(WAVEFORM_POINTS);
 
-  for (let i = 0; i < points; i++) {
+  for (let i = 0; i < WAVEFORM_POINTS; i++) {
     // Generate random values between min and max
     data[i] = min + Math.random() * (max - min);
   }
