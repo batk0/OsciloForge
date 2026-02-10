@@ -36,9 +36,13 @@ export function generateTriangleWave(min, max, cycles, dutyCycle) {
   }
   const data = new Float32Array(WAVEFORM_POINTS);
 
-  // Handle dutyCycle === 0 edge case
+  // Handle dutyCycle edge cases
   if (dutyCycle === 0) {
     data.fill(min);
+    return data;
+  }
+  if (dutyCycle === 100) {
+    data.fill(max);
     return data;
   }
   const periodPoints = WAVEFORM_POINTS / cycles;
@@ -135,7 +139,7 @@ export function generateExponentialWave(min, max, cycles, direction, dutyCycle) 
   const amplitude = max - min;
 
   // Handle amplitude === 0 (constant value) or division by zero edge case
-  if (amplitude === 0 || Math.abs(Math.exp(Math.log(amplitude + 1)) - 1) < Number.EPSILON) {
+  if (Math.abs(amplitude) < Number.EPSILON) {
     // When amplitude is 0, all values should be at min (which equals max)
     data.fill(min);
     return data;
@@ -170,6 +174,13 @@ export function generateExponentialWave(min, max, cycles, direction, dutyCycle) 
 }
 
 export function generateNoise(min, max) {
+  // Handle edge case: min > max - swap values to ensure valid range
+  if (min > max) {
+    const temp = min;
+    min = max;
+    max = temp;
+  }
+
   const data = new Float32Array(WAVEFORM_POINTS);
 
   for (let i = 0; i < WAVEFORM_POINTS; i++) {

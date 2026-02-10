@@ -1,6 +1,8 @@
 import { generateSineWave, generateSquareWave, generateTriangleWave, generateRampWave, generateExponentialWave, generateNoise } from './waveform-generator.js';
 import { WAVEFORM_POINTS, TOP_PADDING, BOTTOM_PADDING } from './state.js';
 
+const WAVEFORM_TYPES_WITH_DUTY_CYCLE = ['square', 'triangle', 'ramp', 'ramp-down', 'exponential', 'exponential-down'];
+
 export class UIManager {
   constructor(state, updateState, canvasDrawer, mouseHandler, drawFunction) {
     this.state = state;
@@ -43,6 +45,8 @@ export class UIManager {
     this.shiftRightBtn = document.getElementById('shift-right-btn');
     this.shiftUpBtn = document.getElementById('shift-up-btn');
     this.shiftDownBtn = document.getElementById('shift-down-btn');
+    this.editModeFreehand = document.getElementById('edit-mode-freehand');
+    this.editModeLine = document.getElementById('edit-mode-line');
     this.drawStyleLine = document.getElementById('draw-style-line');
     this.drawStyleDots = document.getElementById('draw-style-dots');
     this.waveformTypeSelect = document.getElementById('waveform-type');
@@ -179,28 +183,38 @@ export class UIManager {
       return;
     }
 
-    this.drawStyleLine.addEventListener('change', () => {
+    this.drawStyleLine.addEventListener('click', () => {
       this.updateState({ drawStyle: 'line' });
+      this.drawStyleLine.classList.add('active');
+      this.drawStyleDots.classList.remove('active');
       this.draw();
     });
 
-    this.drawStyleDots.addEventListener('change', () => {
+    this.drawStyleDots.addEventListener('click', () => {
       this.updateState({ drawStyle: 'dots' });
+      this.drawStyleDots.classList.add('active');
+      this.drawStyleLine.classList.remove('active');
       this.draw();
     });
   }
 
   setupEditModeListeners() {
-    const editModeRadios = document.querySelectorAll('input[name="edit-mode"]');
-    if (editModeRadios.length === 0) {
+    if (!this.editModeFreehand || !this.editModeLine) {
       return;
     }
 
-    editModeRadios.forEach(radio => {
-      radio.addEventListener('change', (e) => {
-        this.updateState({ editMode: e.target.value });
-        this.mouseHandler.setEditMode(this.state.editMode);
-      });
+    this.editModeFreehand.addEventListener('click', () => {
+      this.updateState({ editMode: 'freehand' });
+      this.editModeFreehand.classList.add('active');
+      this.editModeLine.classList.remove('active');
+      this.mouseHandler.setEditMode(this.state.editMode);
+    });
+
+    this.editModeLine.addEventListener('click', () => {
+      this.updateState({ editMode: 'line' });
+      this.editModeLine.classList.add('active');
+      this.editModeFreehand.classList.remove('active');
+      this.mouseHandler.setEditMode(this.state.editMode);
     });
   }
 
@@ -210,41 +224,49 @@ export class UIManager {
     }
 
     this.openBtn.addEventListener('click', async () => {
-      const fileContent = await window.electronAPI.openFile();
-      if (fileContent !== undefined && fileContent !== null) {
-        const lines = fileContent.split('\n').filter(line => line.trim() !== '');
-        if (lines.length > 0) {
-          const numericData = lines.map(line => parseFloat(line.trim()));
+      try {
+        const fileContent = await window.electronAPI.openFile();
+        if (fileContent !== undefined && fileContent !== null) {
+          const lines = fileContent.split('\n').filter(line => line.trim() !== '');
+          if (lines.length > 0) {
+            const numericData = lines.map(line => parseFloat(line.trim()));
 
-          if (numericData.some(isNaN)) {
-            alert('Error: File contains non-numeric values.');
-            return;
+            if (numericData.some(isNaN)) {
+              alert('Error: File contains non-numeric values.');
+              return;
+            }
+
+            const finalData = new Float32Array(WAVEFORM_POINTS);
+
+            const clampedData = numericData.slice(0, WAVEFORM_POINTS).map(val => Math.max(-1.0, Math.min(1.0, val)));
+            finalData.set(clampedData);
+
+            // Reset zoom and pan on new file
+            this.hZoomSlider.value = 1;
+            this.vZoomSlider.value = 1;
+            this.updateState({
+              waveformData: finalData,
+              lastLoadedWaveformData: new Float32Array(finalData),
+              hZoom: 1,
+              vZoom: 1,
+              viewOffset: 0
+            });
+
+            this.draw();
           }
-
-          const finalData = new Float32Array(WAVEFORM_POINTS);
-
-          const clampedData = numericData.slice(0, WAVEFORM_POINTS).map(val => Math.max(-1.0, Math.min(1.0, val)));
-          finalData.set(clampedData);
-
-          // Reset zoom and pan on new file
-          this.hZoomSlider.value = 1;
-          this.vZoomSlider.value = 1;
-          this.updateState({
-            waveformData: finalData,
-            lastLoadedWaveformData: new Float32Array(finalData),
-            hZoom: 1,
-            vZoom: 1,
-            viewOffset: 0
-          });
-
-          this.draw();
         }
+      } catch (error) {
+        alert('Error opening file: ' + error.message);
       }
     });
 
     this.saveBtn.addEventListener('click', async () => {
-      const dataString = Array.from(this.state.waveformData).join('\n');
-      await window.electronAPI.saveFile(dataString);
+      try {
+        const dataString = Array.from(this.state.waveformData).join('\n');
+        await window.electronAPI.saveFile(dataString);
+      } catch (error) {
+        alert('Error saving file: ' + error.message);
+      }
     });
 
     this.resetBtn.addEventListener('click', () => {
@@ -288,7 +310,7 @@ export class UIManager {
         alert('Cycles must be a positive integer.');
         return;
       }
-      if ((type === 'square' || type === 'triangle' || type === 'ramp' || type === 'ramp-down' || type === 'exponential' || type === 'exponential-down') && (isNaN(dutyCycle) || dutyCycle < 0 || dutyCycle > 100)) {
+      if (WAVEFORM_TYPES_WITH_DUTY_CYCLE.includes(type) && (isNaN(dutyCycle) || dutyCycle < 0 || dutyCycle > 100)) {
         alert('Duty Cycle must be between 0 and 100 for Square, Triangle, Ramp, and Exponential waves.');
         return;
       }
@@ -320,6 +342,7 @@ export class UIManager {
           newWaveformData = generateNoise(min, max);
           break;
         default:
+          console.warn('Unknown waveform type: ' + type);
           return;
       }
       const updatedWaveformData = new Float32Array(this.state.waveformData);
@@ -355,12 +378,26 @@ export class UIManager {
   }
 
   initializeEditMode() {
-    const editModeRadio = document.querySelector('input[name="edit-mode"]:checked');
-    if (editModeRadio && editModeRadio.value) {
-      this.updateState({ editMode: editModeRadio.value });
-    } else {
-      // Fallback to 'freehand' if no radio is checked
-      this.updateState({ editMode: 'freehand' });
+    if (this.editModeFreehand && this.editModeLine) {
+      if (this.state.editMode === 'freehand') {
+        this.editModeFreehand.classList.add('active');
+        this.editModeLine.classList.remove('active');
+      } else {
+        this.editModeLine.classList.add('active');
+        this.editModeFreehand.classList.remove('active');
+      }
+    }
+  }
+
+  initializeDrawStyle() {
+    if (this.drawStyleLine && this.drawStyleDots) {
+      if (this.state.drawStyle === 'line') {
+        this.drawStyleLine.classList.add('active');
+        this.drawStyleDots.classList.remove('active');
+      } else {
+        this.drawStyleDots.classList.add('active');
+        this.drawStyleLine.classList.remove('active');
+      }
     }
   }
 
@@ -369,6 +406,7 @@ export class UIManager {
     this.setupEventListeners();
     this.setupCanvas();
     this.initializeEditMode();
+    this.initializeDrawStyle();
   }
 
   getMouseHandlerCallbacks() {

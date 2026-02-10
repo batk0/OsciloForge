@@ -42,8 +42,8 @@ describe('UIManager', () => {
       shiftRightBtn: createMockElement('shift-right-btn', 'button'),
       shiftUpBtn: createMockElement('shift-up-btn', 'button'),
       shiftDownBtn: createMockElement('shift-down-btn', 'button'),
-      drawStyleLine: createMockElement('draw-style-line', 'input'),
-      drawStyleDots: createMockElement('draw-style-dots', 'input'),
+      drawStyleLine: createMockElement('draw-style-line', 'button'),
+      drawStyleDots: createMockElement('draw-style-dots', 'button'),
       waveformTypeSelect: createMockElement('waveform-type', 'select'),
       amplitudeInput: createMockElement('amplitude', 'input'),
       minValueInput: createMockElement('min-value', 'input'),
@@ -69,26 +69,12 @@ describe('UIManager', () => {
     Object.defineProperty(elements.canvas, 'clientHeight', { value: 300, configurable: true });
     Object.defineProperty(elements.canvas, 'clientWidth', { value: 400, configurable: true });
 
-    elements.drawStyleLine.type = 'radio';
-    elements.drawStyleLine.name = 'draw-style';
-    elements.drawStyleLine.checked = true;
+    // Draw style buttons use active class for state
+    elements.drawStyleLine.classList.add('active');
 
-    elements.drawStyleDots.type = 'radio';
-    elements.drawStyleDots.name = 'draw-style';
-
-    // Add edit mode radio buttons
-    const freehandRadio = document.createElement('input');
-    freehandRadio.type = 'radio';
-    freehandRadio.name = 'edit-mode';
-    freehandRadio.value = 'freehand';
-    freehandRadio.checked = true;
-    document.body.appendChild(freehandRadio);
-
-    const lineRadio = document.createElement('input');
-    lineRadio.type = 'radio';
-    lineRadio.name = 'edit-mode';
-    lineRadio.value = 'line';
-    document.body.appendChild(lineRadio);
+    // Add edit mode toggle buttons
+    createMockElement('edit-mode-freehand', 'button').classList.add('active');
+    createMockElement('edit-mode-line', 'button');
 
     // Create mocks
     mockCanvasDrawer = {
@@ -156,9 +142,62 @@ describe('UIManager', () => {
       expect(setupDeviceDownloadListenerSpy).toHaveBeenCalled();
     });
 
-    it('should initialize edit mode from DOM', () => {
+    it('should initialize edit mode from state', () => {
+      uiManager.initializeElements();
       uiManager.initializeEditMode();
       expect(state.editMode).toBe('freehand');
+      expect(uiManager.editModeFreehand.classList.contains('active')).toBe(true);
+      expect(uiManager.editModeLine.classList.contains('active')).toBe(false);
+    });
+  });
+
+  describe('edit mode controls', () => {
+    beforeEach(() => {
+      uiManager.initializeElements();
+      uiManager.setupEditModeListeners();
+    });
+
+    it('should set edit mode to freehand when freehand button is clicked', () => {
+      // First switch to line mode
+      updateState({ editMode: 'line' });
+      uiManager.editModeLine.classList.add('active');
+      uiManager.editModeFreehand.classList.remove('active');
+
+      // Now click freehand button
+      uiManager.editModeFreehand.click();
+
+      expect(state.editMode).toBe('freehand');
+      expect(uiManager.editModeFreehand.classList.contains('active')).toBe(true);
+      expect(uiManager.editModeLine.classList.contains('active')).toBe(false);
+      expect(mockMouseHandler.setEditMode).toHaveBeenCalledWith('freehand');
+    });
+
+    it('should set edit mode to line when line button is clicked', () => {
+      uiManager.editModeLine.click();
+
+      expect(state.editMode).toBe('line');
+      expect(uiManager.editModeLine.classList.contains('active')).toBe(true);
+      expect(uiManager.editModeFreehand.classList.contains('active')).toBe(false);
+      expect(mockMouseHandler.setEditMode).toHaveBeenCalledWith('line');
+    });
+
+    it('should return early from setupEditModeListeners when edit mode buttons are null', () => {
+      // Create a new UIManager instance
+      const testUiManager = new UIManager(
+        state,
+        updateState,
+        mockCanvasDrawer,
+        mockMouseHandler,
+        mockDrawFunction
+      );
+
+      // Initialize elements but remove edit mode buttons
+      testUiManager.initializeElements();
+      testUiManager.editModeFreehand = null;
+      testUiManager.editModeLine = null;
+
+      // Should not throw error
+      expect(() => testUiManager.setupEditModeListeners()).not.toThrow();
     });
   });
 
@@ -232,6 +271,25 @@ describe('UIManager', () => {
       expect(state.vZoom).toBe(newZoom);
       expect(mockDrawFunction).toHaveBeenCalled();
     });
+
+    it('should return early from vZoomSlider handler when canvas is null', () => {
+      // Set canvas to null to trigger early return
+      uiManager.canvas = null;
+
+      // Store initial state
+      const initialVZoom = state.vZoom;
+      const initialVShift = state.vShift;
+
+      // Trigger vZoomSlider input event
+      elements.vZoomSlider.value = '2.0';
+      elements.vZoomSlider.dispatchEvent(new Event('input'));
+
+      // State should not change due to early return
+      expect(state.vZoom).toBe(initialVZoom);
+      expect(state.vShift).toBe(initialVShift);
+      // draw should not be called
+      expect(mockDrawFunction).not.toHaveBeenCalled();
+    });
   });
 
   describe('zoom reset', () => {
@@ -300,20 +358,40 @@ describe('UIManager', () => {
       uiManager.setupDrawStyleListeners();
     });
 
-    it('should set draw style to line when line radio is changed', () => {
-      elements.drawStyleLine.checked = true;
-      elements.drawStyleLine.dispatchEvent(new Event('change'));
+    it('should set draw style to line when line button is clicked', () => {
+      elements.drawStyleLine.click();
 
       expect(state.drawStyle).toBe('line');
       expect(mockDrawFunction).toHaveBeenCalled();
     });
 
-    it('should set draw style to dots when dots radio is changed', () => {
-      elements.drawStyleDots.checked = true;
-      elements.drawStyleDots.dispatchEvent(new Event('change'));
+    it('should set draw style to dots when dots button is clicked', () => {
+      elements.drawStyleDots.click();
 
       expect(state.drawStyle).toBe('dots');
       expect(mockDrawFunction).toHaveBeenCalled();
+    });
+  });
+
+  describe('initializeDrawStyle', () => {
+    beforeEach(() => {
+      uiManager.initializeElements();
+    });
+
+    it('should initialize line draw style when state is line', () => {
+      updateState({ drawStyle: 'line' });
+      uiManager.initializeDrawStyle();
+
+      expect(uiManager.drawStyleLine.classList.contains('active')).toBe(true);
+      expect(uiManager.drawStyleDots.classList.contains('active')).toBe(false);
+    });
+
+    it('should initialize dots draw style when state is dots', () => {
+      updateState({ drawStyle: 'dots' });
+      uiManager.initializeDrawStyle();
+
+      expect(uiManager.drawStyleDots.classList.contains('active')).toBe(true);
+      expect(uiManager.drawStyleLine.classList.contains('active')).toBe(false);
     });
   });
 
@@ -366,6 +444,34 @@ describe('UIManager', () => {
       expect(state.waveformData[1]).toBeCloseTo(0.2, 5);
       expect(state.waveformData[2]).toBeCloseTo(0.3, 5);
       expect(mockDrawFunction).toHaveBeenCalled();
+    });
+
+    it('should alert when openFile throws an error', async () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      const errorMessage = 'Permission denied';
+      window.electronAPI.openFile.mockRejectedValue(new Error(errorMessage));
+
+      elements.openBtn.click();
+
+      // Wait for the async open to complete
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(alertSpy).toHaveBeenCalledWith('Error opening file: ' + errorMessage);
+      alertSpy.mockRestore();
+    });
+
+    it('should alert when saveFile throws an error', async () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      const errorMessage = 'Disk full';
+      window.electronAPI.saveFile.mockRejectedValue(new Error(errorMessage));
+
+      elements.saveBtn.click();
+
+      // Wait for the async save to complete
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(alertSpy).toHaveBeenCalledWith('Error saving file: ' + errorMessage);
+      alertSpy.mockRestore();
     });
   });
 
@@ -653,14 +759,13 @@ describe('UIManager', () => {
       expect(mouseHandlerDestroySpy).toHaveBeenCalled();
     });
 
-    it('should fallback to freehand mode if no edit mode is checked', () => {
-      // Uncheck all radio buttons
-      const radios = document.querySelectorAll('input[name="edit-mode"]');
-      radios.forEach(r => {
-        r.checked = false;
-      });
+    it('should fallback to line mode if state is invalid', () => {
+      // Set invalid edit mode
+      updateState({ editMode: 'invalid' });
       uiManager.initializeEditMode();
-      expect(state.editMode).toBe('freehand');
+      // When state is not 'freehand', line mode should be active
+      expect(uiManager.editModeLine.classList.contains('active')).toBe(true);
+      expect(uiManager.editModeFreehand.classList.contains('active')).toBe(false);
     });
   });
 });

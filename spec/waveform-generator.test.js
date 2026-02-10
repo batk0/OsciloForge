@@ -235,6 +235,20 @@ describe('Waveform Generator', () => {
         expect(result[i]).toBeCloseTo(min);
       }
     });
+
+    it('should handle dutyCycle === 100 edge case', () => {
+      const min = -1.0;
+      const max = 1.0;
+      const cycles = 1;
+      const dutyCycle = 100;
+
+      const result = generateTriangleWave(min, max, cycles, dutyCycle);
+
+      // All values should be at max when dutyCycle is 100
+      for (let i = 0; i < result.length; i++) {
+        expect(result[i]).toBeCloseTo(max);
+      }
+    });
   });
 
   describe('edge cases', () => {

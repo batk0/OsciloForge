@@ -46,14 +46,11 @@ describe('UIManager Integration', () => {
     createMockElement('shift-up-btn', 'button');
     createMockElement('shift-down-btn', 'button');
 
-    const drawStyleLine = createMockElement('draw-style-line', 'input');
-    drawStyleLine.type = 'radio';
-    drawStyleLine.name = 'draw-style';
-    drawStyleLine.checked = true;
+    createMockElement('edit-mode-freehand', 'button').classList.add('active');
+    createMockElement('edit-mode-line', 'button');
 
-    const drawStyleDots = createMockElement('draw-style-dots', 'input');
-    drawStyleDots.type = 'radio';
-    drawStyleDots.name = 'draw-style';
+    createMockElement('draw-style-line', 'button').classList.add('active');
+    createMockElement('draw-style-dots', 'button');
 
     const waveformTypeSelect = createMockElement('waveform-type', 'select');
     waveformTypeSelect.innerHTML = `
@@ -67,20 +64,6 @@ describe('UIManager Integration', () => {
     createMockElement('duty-cycle', 'input');
     createMockElement('generate-waveform-btn', 'button');
     createMockElement('download-device-btn', 'button');
-
-    // Add edit mode radio buttons
-    const freehandRadio = document.createElement('input');
-    freehandRadio.type = 'radio';
-    freehandRadio.name = 'edit-mode';
-    freehandRadio.value = 'freehand';
-    freehandRadio.checked = true;
-    document.body.appendChild(freehandRadio);
-
-    const lineRadio = document.createElement('input');
-    lineRadio.type = 'radio';
-    lineRadio.name = 'edit-mode';
-    lineRadio.value = 'line';
-    document.body.appendChild(lineRadio);
 
     // Set canvas dimensions
     Object.defineProperty(mockCanvas, 'clientHeight', { value: 400, configurable: true });
@@ -151,8 +134,7 @@ describe('UIManager Integration', () => {
     });
 
     it('should handle style changes and update state', () => {
-      uiManager.drawStyleDots.checked = true;
-      uiManager.drawStyleDots.dispatchEvent(new Event('change'));
+      uiManager.drawStyleDots.click();
 
       expect(state.drawStyle).toBe('dots');
       expect(drawFunction).toHaveBeenCalled();
@@ -196,11 +178,10 @@ describe('UIManager Integration', () => {
     });
 
     it('should handle edit mode changes', () => {
-      const lineRadio = document.querySelector('input[name="edit-mode"][value="line"]');
+      const lineButton = document.querySelector('button#edit-mode-line');
       const setEditModeSpy = vi.spyOn(mouseHandler, 'setEditMode');
 
-      lineRadio.checked = true;
-      lineRadio.dispatchEvent(new Event('change'));
+      lineButton.click();
 
       expect(state.editMode).toBe('line');
       expect(setEditModeSpy).toHaveBeenCalledWith('line');
