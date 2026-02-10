@@ -43,6 +43,8 @@ export class UIManager {
     this.shiftRightBtn = document.getElementById('shift-right-btn');
     this.shiftUpBtn = document.getElementById('shift-up-btn');
     this.shiftDownBtn = document.getElementById('shift-down-btn');
+    this.editModeFreehand = document.getElementById('edit-mode-freehand');
+    this.editModeLine = document.getElementById('edit-mode-line');
     this.drawStyleLine = document.getElementById('draw-style-line');
     this.drawStyleDots = document.getElementById('draw-style-dots');
     this.waveformTypeSelect = document.getElementById('waveform-type');
@@ -179,28 +181,38 @@ export class UIManager {
       return;
     }
 
-    this.drawStyleLine.addEventListener('change', () => {
+    this.drawStyleLine.addEventListener('click', () => {
       this.updateState({ drawStyle: 'line' });
+      this.drawStyleLine.classList.add('active');
+      this.drawStyleDots.classList.remove('active');
       this.draw();
     });
 
-    this.drawStyleDots.addEventListener('change', () => {
+    this.drawStyleDots.addEventListener('click', () => {
       this.updateState({ drawStyle: 'dots' });
+      this.drawStyleDots.classList.add('active');
+      this.drawStyleLine.classList.remove('active');
       this.draw();
     });
   }
 
   setupEditModeListeners() {
-    const editModeRadios = document.querySelectorAll('input[name="edit-mode"]');
-    if (editModeRadios.length === 0) {
+    if (!this.editModeFreehand || !this.editModeLine) {
       return;
     }
 
-    editModeRadios.forEach(radio => {
-      radio.addEventListener('change', (e) => {
-        this.updateState({ editMode: e.target.value });
-        this.mouseHandler.setEditMode(this.state.editMode);
-      });
+    this.editModeFreehand.addEventListener('click', () => {
+      this.updateState({ editMode: 'freehand' });
+      this.editModeFreehand.classList.add('active');
+      this.editModeLine.classList.remove('active');
+      this.mouseHandler.setEditMode(this.state.editMode);
+    });
+
+    this.editModeLine.addEventListener('click', () => {
+      this.updateState({ editMode: 'line' });
+      this.editModeLine.classList.add('active');
+      this.editModeFreehand.classList.remove('active');
+      this.mouseHandler.setEditMode(this.state.editMode);
     });
   }
 
@@ -355,12 +367,26 @@ export class UIManager {
   }
 
   initializeEditMode() {
-    const editModeRadio = document.querySelector('input[name="edit-mode"]:checked');
-    if (editModeRadio && editModeRadio.value) {
-      this.updateState({ editMode: editModeRadio.value });
-    } else {
-      // Fallback to 'freehand' if no radio is checked
-      this.updateState({ editMode: 'freehand' });
+    if (this.editModeFreehand && this.editModeLine) {
+      if (this.state.editMode === 'freehand') {
+        this.editModeFreehand.classList.add('active');
+        this.editModeLine.classList.remove('active');
+      } else {
+        this.editModeLine.classList.add('active');
+        this.editModeFreehand.classList.remove('active');
+      }
+    }
+  }
+
+  initializeDrawStyle() {
+    if (this.drawStyleLine && this.drawStyleDots) {
+      if (this.state.drawStyle === 'line') {
+        this.drawStyleLine.classList.add('active');
+        this.drawStyleDots.classList.remove('active');
+      } else {
+        this.drawStyleDots.classList.add('active');
+        this.drawStyleLine.classList.remove('active');
+      }
     }
   }
 
@@ -369,6 +395,7 @@ export class UIManager {
     this.setupEventListeners();
     this.setupCanvas();
     this.initializeEditMode();
+    this.initializeDrawStyle();
   }
 
   getMouseHandlerCallbacks() {

@@ -24,12 +24,7 @@ body {
   display: flex;
   align-items: center;
   gap: 5px; /* Reduced gap */
-  padding: 0 5px; /* Reduced padding */
-  border-right: 1px solid #666;
-}
-
-.toolbar-group:last-child {
-  border-right: none;
+  padding: 0; /* No horizontal padding */
 }
 
 /* Toolbar Controls */
@@ -52,7 +47,6 @@ button {
 }
 
 select,
-input[type="radio"],
 input[type="number"] {
   font-size: 0.9em;
   background-color: #5a5a5a;
@@ -68,6 +62,16 @@ button:hover {
 
 input[type="number"] {
   width: 50px;
+}
+
+/* Toggle Button Active State */
+.toggle-button.active {
+  background-color: #6a6a6a;
+  border-color: #f0f0f0;
+}
+
+.toggle-button.active:hover {
+  background-color: #7a7a7a;
 }
 
 /* Canvas */

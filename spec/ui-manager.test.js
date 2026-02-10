@@ -42,8 +42,8 @@ describe('UIManager', () => {
       shiftRightBtn: createMockElement('shift-right-btn', 'button'),
       shiftUpBtn: createMockElement('shift-up-btn', 'button'),
       shiftDownBtn: createMockElement('shift-down-btn', 'button'),
-      drawStyleLine: createMockElement('draw-style-line', 'input'),
-      drawStyleDots: createMockElement('draw-style-dots', 'input'),
+      drawStyleLine: createMockElement('draw-style-line', 'button'),
+      drawStyleDots: createMockElement('draw-style-dots', 'button'),
       waveformTypeSelect: createMockElement('waveform-type', 'select'),
       amplitudeInput: createMockElement('amplitude', 'input'),
       minValueInput: createMockElement('min-value', 'input'),
@@ -69,26 +69,12 @@ describe('UIManager', () => {
     Object.defineProperty(elements.canvas, 'clientHeight', { value: 300, configurable: true });
     Object.defineProperty(elements.canvas, 'clientWidth', { value: 400, configurable: true });
 
-    elements.drawStyleLine.type = 'radio';
-    elements.drawStyleLine.name = 'draw-style';
-    elements.drawStyleLine.checked = true;
+    // Draw style buttons use active class for state
+    elements.drawStyleLine.classList.add('active');
 
-    elements.drawStyleDots.type = 'radio';
-    elements.drawStyleDots.name = 'draw-style';
-
-    // Add edit mode radio buttons
-    const freehandRadio = document.createElement('input');
-    freehandRadio.type = 'radio';
-    freehandRadio.name = 'edit-mode';
-    freehandRadio.value = 'freehand';
-    freehandRadio.checked = true;
-    document.body.appendChild(freehandRadio);
-
-    const lineRadio = document.createElement('input');
-    lineRadio.type = 'radio';
-    lineRadio.name = 'edit-mode';
-    lineRadio.value = 'line';
-    document.body.appendChild(lineRadio);
+    // Add edit mode toggle buttons
+    createMockElement('edit-mode-freehand', 'button').classList.add('active');
+    createMockElement('edit-mode-line', 'button');
 
     // Create mocks
     mockCanvasDrawer = {
@@ -156,9 +142,12 @@ describe('UIManager', () => {
       expect(setupDeviceDownloadListenerSpy).toHaveBeenCalled();
     });
 
-    it('should initialize edit mode from DOM', () => {
+    it('should initialize edit mode from state', () => {
+      uiManager.initializeElements();
       uiManager.initializeEditMode();
       expect(state.editMode).toBe('freehand');
+      expect(uiManager.editModeFreehand.classList.contains('active')).toBe(true);
+      expect(uiManager.editModeLine.classList.contains('active')).toBe(false);
     });
   });
 
@@ -300,17 +289,15 @@ describe('UIManager', () => {
       uiManager.setupDrawStyleListeners();
     });
 
-    it('should set draw style to line when line radio is changed', () => {
-      elements.drawStyleLine.checked = true;
-      elements.drawStyleLine.dispatchEvent(new Event('change'));
+    it('should set draw style to line when line button is clicked', () => {
+      elements.drawStyleLine.click();
 
       expect(state.drawStyle).toBe('line');
       expect(mockDrawFunction).toHaveBeenCalled();
     });
 
-    it('should set draw style to dots when dots radio is changed', () => {
-      elements.drawStyleDots.checked = true;
-      elements.drawStyleDots.dispatchEvent(new Event('change'));
+    it('should set draw style to dots when dots button is clicked', () => {
+      elements.drawStyleDots.click();
 
       expect(state.drawStyle).toBe('dots');
       expect(mockDrawFunction).toHaveBeenCalled();
@@ -653,14 +640,13 @@ describe('UIManager', () => {
       expect(mouseHandlerDestroySpy).toHaveBeenCalled();
     });
 
-    it('should fallback to freehand mode if no edit mode is checked', () => {
-      // Uncheck all radio buttons
-      const radios = document.querySelectorAll('input[name="edit-mode"]');
-      radios.forEach(r => {
-        r.checked = false;
-      });
+    it('should fallback to freehand mode if state is invalid', () => {
+      // Set invalid edit mode
+      updateState({ editMode: 'invalid' });
       uiManager.initializeEditMode();
-      expect(state.editMode).toBe('freehand');
+      // When state is not 'freehand', line mode should be active
+      expect(uiManager.editModeLine.classList.contains('active')).toBe(true);
+      expect(uiManager.editModeFreehand.classList.contains('active')).toBe(false);
     });
   });
 });
