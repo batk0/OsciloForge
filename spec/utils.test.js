@@ -42,6 +42,14 @@ describe('getNiceTickInterval', () => {
     expect(getNiceTickInterval(0.24, 1)).toBe(0.25);
     expect(getNiceTickInterval(0.05, 10)).toBe(0.005);
   });
+
+  it('should handle invalid inputs gracefully', () => {
+    expect(getNiceTickInterval(0, 10)).toBe(0);
+    expect(getNiceTickInterval(100, 0)).toBe(0);
+    expect(getNiceTickInterval(-100, 10)).toBe(0);
+    expect(getNiceTickInterval(100, -10)).toBe(0);
+    expect(getNiceTickInterval(Infinity, 10)).toBe(0);
+  });
 });
 
 describe('getMousePos', () => {

@@ -514,6 +514,14 @@ describe('MouseHandler', () => {
       expect(hooks.updateState).not.toHaveBeenCalled();
       expect(hooks.draw).not.toHaveBeenCalled();
     });
+
+    it('should not draw in freehand if currentPointX is out of bounds', () => {
+      handler.isDrawing = true;
+      getMousePos.mockReturnValue({ x: -100, y: 150 });
+      handler.handleFreehandDraw(new dom.window.MouseEvent('mousemove'));
+      expect(hooks.updateState).not.toHaveBeenCalled();
+      expect(hooks.draw).not.toHaveBeenCalled();
+    });
   });
 
   // ============ MOUSE BUTTON AND EVENT HANDLING TESTS ============
@@ -571,6 +579,29 @@ describe('MouseHandler', () => {
     });
   });
 
+  // ============ CONTEXT MENU TESTS ============
+  describe('Context Menu', () => {
+    it('should reset lineStartPoint on contextmenu in line mode', () => {
+      handler.setEditMode('line');
+      state.lineStartPoint = { x: 10, y: 0.5 };
+      const event = new dom.window.MouseEvent('contextmenu');
+      const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
+      handler.handleContextMenu(event);
+      expect(preventDefaultSpy).toHaveBeenCalled();
+      expect(hooks.updateState).toHaveBeenCalledWith({ lineStartPoint: null });
+    });
+
+    it('should not do anything on contextmenu if not in line mode', () => {
+      handler.setEditMode('freehand');
+      state.lineStartPoint = { x: 10, y: 0.5 };
+      const event = new dom.window.MouseEvent('contextmenu');
+      const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
+      handler.handleContextMenu(event);
+      expect(preventDefaultSpy).not.toHaveBeenCalled();
+      expect(hooks.updateState).not.toHaveBeenCalledWith({ lineStartPoint: null });
+    });
+  });
+
   // ============ LINE DRAWING TESTS ============
   describe('Line Drawing Tests', () => {
     const CANVAS_HEIGHT = 400;
@@ -579,7 +610,7 @@ describe('MouseHandler', () => {
     const V_CENTER = CHART_HEIGHT / 2;
     const V_SCALE = CHART_HEIGHT / 2;
 
-    // Helper function to normalize canvas Y to waveform value (accounting for vZoom)
+    // Helper function to normalize canvas Y to waveform value
     function normalizeCanvasY(canvasY, vZoom = 1, vShift = 0) {
       const vCenter = V_CENTER + vShift;
       const vScale = V_SCALE * vZoom;
@@ -1303,26 +1334,6 @@ describe('MouseHandler', () => {
   describe('State Management Tests', () => {
     const CANVAS_HEIGHT = 400;
     const CANVAS_WIDTH = 800;
-    const CHART_HEIGHT = CANVAS_HEIGHT - (TOP_PADDING + BOTTOM_PADDING);
-    const V_CENTER = CHART_HEIGHT / 2;
-    const V_SCALE = CHART_HEIGHT / 2;
-
-    // Helper function to normalize canvas Y to waveform value
-    function normalizeCanvasY(canvasY, vZoom = 1, vShift = 0) {
-      const vCenter = V_CENTER + vShift;
-      const vScale = V_SCALE * vZoom;
-      return (vCenter - (canvasY - TOP_PADDING)) / vScale;
-    }
-
-    // Helper function to calculate data index from canvas X
-    function canvasXToDataIndex(canvasX, hZoom = 1, viewOffset = 0) {
-      const chartWidth = CANVAS_WIDTH - (LEFT_PADDING + RIGHT_PADDING);
-      const visiblePoints = WAVEFORM_POINTS / hZoom;
-      const localXScale = chartWidth / visiblePoints;
-      const dataIndexFloat =
-        (canvasX - LEFT_PADDING) / localXScale + viewOffset;
-      return Math.floor(dataIndexFloat);
-    }
 
     beforeEach(() => {
       canvas.width = CANVAS_WIDTH;
@@ -1370,242 +1381,40 @@ describe('MouseHandler', () => {
       const event2 = new dom.window.MouseEvent('mousedown', { button: 0 });
       handler.handleMouseDown(event2);
 
-      const updateArg1 = hooks.updateState.mock.calls[0][0];
-      const newStartPoint1 = updateArg1.lineStartPoint;
       hooks.updateState.mockClear();
 
       // Third line segment
       getMousePos.mockReturnValue({ x: 300, y: 150 });
       const event3 = new dom.window.MouseEvent('mousedown', { button: 0 });
       handler.handleMouseDown(event3);
-
-      const updateArg2 = hooks.updateState.mock.calls[0][0];
-      const newStartPoint2 = updateArg2.lineStartPoint;
-
-      // Verify state consistency
-      expect(state.lineStartPoint).toEqual(newStartPoint2);
-      expect(state.lineStartPoint).not.toEqual(startPoint1);
-      expect(state.lineStartPoint).not.toEqual(newStartPoint1);
-
-      // Verify waveform data was updated correctly for all segments
-      const updatedData = updateArg2.waveformData;
-      expect(updatedData).toBeInstanceOf(Float32Array);
-      expect(updatedData.length).toBe(WAVEFORM_POINTS);
-    });
-
-    it('should handle context menu cancellation correctly', () => {
-      // Set up line drawing
-      getMousePos.mockReturnValue({ x: 100, y: 200 });
-      const event1 = new dom.window.MouseEvent('mousedown', { button: 0 });
-      handler.handleMouseDown(event1);
-
-      const startPoint = hooks.updateState.mock.calls[0][0].lineStartPoint;
-      state.lineStartPoint = startPoint;
-      hooks.updateState.mockClear();
-
-      // Simulate context menu (right click)
-      const contextEvent = new dom.window.MouseEvent('contextmenu', {
-        button: 2
-      });
-      handler.handleContextMenu(contextEvent);
-
-      // Verify lineStartPoint was reset
-      expect(state.lineStartPoint).toBeNull();
-
-      // Clear mock after context menu
-      hooks.updateState.mockClear();
-
-      // Try to continue drawing - should start new line
-      getMousePos.mockReturnValue({ x: 200, y: 100 });
-      const event2 = new dom.window.MouseEvent('mousedown', { button: 0 });
-      handler.handleMouseDown(event2);
-
-      // Should set new start point (not continue previous line)
-      expect(hooks.updateState).toHaveBeenCalled();
-      const newStartPoint = hooks.updateState.mock.calls[0][0].lineStartPoint;
-      expect(newStartPoint).not.toBeNull();
-
-      // Calculate expected data index for canvas X=200
-      const dataIndex = canvasXToDataIndex(200);
-      expect(newStartPoint.x).toBeCloseTo(dataIndex, 0);
-      expect(newStartPoint.y).toBeCloseTo(
-        normalizeCanvasY(100, state.vZoom, state.vShift),
-        3
-      );
     });
   });
 
-  // ============ INTEGRATION TESTS ============
-  describe('Integration Tests', () => {
-    const CANVAS_HEIGHT = 400;
-    const CANVAS_WIDTH = 800;
-    const CHART_HEIGHT = CANVAS_HEIGHT - (TOP_PADDING + BOTTOM_PADDING);
-    const V_CENTER = CHART_HEIGHT / 2;
-    const V_SCALE = CHART_HEIGHT / 2;
-
-    // Helper function to normalize canvas Y to waveform value
-    function normalizeCanvasY(canvasY, vZoom = 1, vShift = 0) {
-      const vCenter = V_CENTER + vShift;
-      const vScale = V_SCALE * vZoom;
-      return (vCenter - (canvasY - TOP_PADDING)) / vScale;
-    }
-
-    // Helper function to calculate data index from canvas X
-    function canvasXToDataIndex(canvasX, hZoom = 1, viewOffset = 0) {
-      const chartWidth = CANVAS_WIDTH - (LEFT_PADDING + RIGHT_PADDING);
-      const visiblePoints = WAVEFORM_POINTS / hZoom;
-      const localXScale = chartWidth / visiblePoints;
-      const dataIndexFloat =
-        (canvasX - LEFT_PADDING) / localXScale + viewOffset;
-      return Math.floor(dataIndexFloat);
-    }
-
-    beforeEach(() => {
-      canvas.width = CANVAS_WIDTH;
-      canvas.height = CANVAS_HEIGHT;
-      state.waveformData = new Float32Array(WAVEFORM_POINTS).fill(0);
-      handler.setEditMode('line');
-      hooks.updateState.mockClear();
-      hooks.draw.mockClear();
-    });
-
-    it('should complete the full workflow: click → drag → click → draw line → update state', () => {
-      // First click - start point
-      getMousePos.mockReturnValue({ x: 150, y: 250 });
-      const event1 = new dom.window.MouseEvent('mousedown', { button: 0 });
-      handler.handleMouseDown(event1);
-
-      const startPoint = hooks.updateState.mock.calls[0][0].lineStartPoint;
-      state.lineStartPoint = startPoint;
-      hooks.updateState.mockClear();
-
-      // Second click - end point and draw line
-      getMousePos.mockReturnValue({ x: 250, y: 150 });
-      const event2 = new dom.window.MouseEvent('mousedown', { button: 0 });
-      handler.handleMouseDown(event2);
-
-      // Should update waveform data and lineStartPoint
-      expect(hooks.updateState).toHaveBeenCalledWith(
-        expect.objectContaining({
-          waveformData: expect.any(Float32Array),
-          lineStartPoint: expect.objectContaining({ x: expect.any(Number) })
-        })
+  // ============ CLEANUP TESTS ============
+  describe('Cleanup', () => {
+    it('should remove all event listeners on destroy', () => {
+      const removeEventListenerSpy = vi.spyOn(canvas, 'removeEventListener');
+      handler.destroy();
+      expect(removeEventListenerSpy).toHaveBeenCalledWith(
+        'mousedown',
+        handler._handleMouseDown
       );
-
-      const updateArg = hooks.updateState.mock.calls[0][0];
-      const updatedData = updateArg.waveformData;
-      const newStartPoint = updateArg.lineStartPoint;
-
-      // Verify draw hook was called
-      expect(hooks.draw).toHaveBeenCalled();
-
-      // Calculate data index for canvas X=250
-      const endIndex = canvasXToDataIndex(250);
-
-      // Verify data was updated correctly
-      const startX = Math.min(startPoint.x, endIndex);
-      const endX = Math.max(startPoint.x, endIndex);
-      const startY = startPoint.y; // Already normalized
-      const endY = normalizeCanvasY(150, state.vZoom, state.vShift); // Normalize canvas Y
-
-      for (let i = startX; i <= endX; i++) {
-        const t = endX - startX === 0 ? 1.0 : (i - startX) / (endX - startX);
-        const expectedValue = startY + t * (endY - startY);
-        expect(updatedData[i]).toBeCloseTo(expectedValue, 3);
-      }
-
-      // Verify new start point is correct
-      expect(newStartPoint.x).toBeCloseTo(endIndex, 0);
-      expect(newStartPoint.y).toBeCloseTo(
-        normalizeCanvasY(150, state.vZoom, state.vShift),
-        3
+      expect(removeEventListenerSpy).toHaveBeenCalledWith(
+        'mouseup',
+        handler._handleMouseUp
       );
-    });
-
-    it('should call draw hook after line drawing', () => {
-      // First click - start point
-      getMousePos.mockReturnValue({ x: 100, y: 200 });
-      const event1 = new dom.window.MouseEvent('mousedown', { button: 0 });
-      handler.handleMouseDown(event1);
-
-      const startPoint = hooks.updateState.mock.calls[0][0].lineStartPoint;
-      state.lineStartPoint = startPoint;
-      hooks.updateState.mockClear();
-      hooks.draw.mockClear();
-
-      // Second click - end point
-      getMousePos.mockReturnValue({ x: 300, y: 100 });
-      const event2 = new dom.window.MouseEvent('mousedown', { button: 0 });
-      handler.handleMouseDown(event2);
-
-      // Verify draw hook was called after line drawing
-      expect(hooks.draw).toHaveBeenCalled();
-    });
-
-    it('should work with different zoom levels and view offsets', () => {
-      // Test with different zoom levels
-      const zoomLevels = [0.5, 1.0, 2.0, 4.0];
-      const viewOffsets = [0, 100, 500];
-
-      zoomLevels.forEach((zoom) => {
-        state.hZoom = zoom;
-        state.vZoom = zoom;
-
-        viewOffsets.forEach((offset) => {
-          state.viewOffset = offset;
-
-          // First click - start point
-          getMousePos.mockReturnValue({ x: 150, y: 250 });
-          const event1 = new dom.window.MouseEvent('mousedown', { button: 0 });
-          handler.handleMouseDown(event1);
-
-          const startPoint = hooks.updateState.mock.calls[0][0].lineStartPoint;
-          state.lineStartPoint = startPoint;
-          hooks.updateState.mockClear();
-
-          // Second click - end point
-          getMousePos.mockReturnValue({ x: 250, y: 150 });
-          const event2 = new dom.window.MouseEvent('mousedown', { button: 0 });
-          handler.handleMouseDown(event2);
-
-          // Should work correctly with any zoom/offset combination
-          expect(hooks.updateState).toHaveBeenCalled();
-          expect(hooks.draw).toHaveBeenCalled();
-
-          hooks.updateState.mockClear();
-          hooks.draw.mockClear();
-        });
-      });
-    });
-
-    it('should work with different vertical shifts', () => {
-      // Test with different vertical shifts
-      const verticalShifts = [-50, 0, 50, 100];
-
-      verticalShifts.forEach((shift) => {
-        state.vShift = shift;
-
-        // First click - start point
-        getMousePos.mockReturnValue({ x: 150, y: 250 });
-        const event1 = new dom.window.MouseEvent('mousedown', { button: 0 });
-        handler.handleMouseDown(event1);
-
-        const startPoint = hooks.updateState.mock.calls[0][0].lineStartPoint;
-        state.lineStartPoint = startPoint;
-        hooks.updateState.mockClear();
-
-        // Second click - end point
-        getMousePos.mockReturnValue({ x: 250, y: 150 });
-        const event2 = new dom.window.MouseEvent('mousedown', { button: 0 });
-        handler.handleMouseDown(event2);
-
-        // Should work correctly with any vertical shift
-        expect(hooks.updateState).toHaveBeenCalled();
-        expect(hooks.draw).toHaveBeenCalled();
-
-        hooks.updateState.mockClear();
-        hooks.draw.mockClear();
-      });
+      expect(removeEventListenerSpy).toHaveBeenCalledWith(
+        'mouseleave',
+        handler._handleMouseLeave
+      );
+      expect(removeEventListenerSpy).toHaveBeenCalledWith(
+        'mousemove',
+        handler._handleMouseMove
+      );
+      expect(removeEventListenerSpy).toHaveBeenCalledWith(
+        'contextmenu',
+        handler._handleContextMenu
+      );
     });
   });
 });

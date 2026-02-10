@@ -12,5 +12,9 @@ API.md
 #AGENTS.md
 GEMINI.md
 
+# Backup and copy files
+*.backup
+*.copy
+
 node_modules
 coverage

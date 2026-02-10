@@ -96,7 +96,8 @@ describe('UIManager', () => {
     };
 
     mockMouseHandler = {
-      setEditMode: vi.fn()
+      setEditMode: vi.fn(),
+      destroy: vi.fn()
     };
 
     mockDrawFunction = vi.fn();
@@ -316,6 +317,58 @@ describe('UIManager', () => {
     });
   });
 
+  describe('file operation listeners', () => {
+    beforeEach(() => {
+      uiManager.initializeElements();
+      uiManager.setupFileOperationListeners();
+    });
+
+    it('should call window.electronAPI.saveFile when save button is clicked', async () => {
+      const testData = new Float32Array([0.5, 0.6, 0.7]);
+      updateState({ waveformData: testData });
+
+      window.electronAPI.saveFile.mockResolvedValue(undefined);
+
+      elements.saveBtn.click();
+
+      // Wait for the async save to complete
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(window.electronAPI.saveFile).toHaveBeenCalledTimes(1);
+      // The data is converted from Float32Array to string
+      const expectedDataString = Array.from(testData).join('\n');
+      expect(window.electronAPI.saveFile).toHaveBeenCalledWith(expectedDataString);
+    });
+
+    it('should alert when file contains non-numeric values', async () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      window.electronAPI.openFile.mockResolvedValue('0.5\nabc\n0.7');
+
+      elements.openBtn.click();
+
+      // Wait for the async open to complete
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(alertSpy).toHaveBeenCalledWith('Error: File contains non-numeric values.');
+      alertSpy.mockRestore();
+    });
+
+    it('should load file with valid numeric values', async () => {
+      window.electronAPI.openFile.mockResolvedValue('0.1\n0.2\n0.3');
+
+      elements.openBtn.click();
+
+      // Wait for the async open to complete
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      // Check that the waveform data was updated
+      expect(state.waveformData[0]).toBeCloseTo(0.1, 5);
+      expect(state.waveformData[1]).toBeCloseTo(0.2, 5);
+      expect(state.waveformData[2]).toBeCloseTo(0.3, 5);
+      expect(mockDrawFunction).toHaveBeenCalled();
+    });
+  });
+
   describe('waveform generation validation', () => {
     beforeEach(() => {
       // Add options to waveform type select
@@ -323,6 +376,11 @@ describe('UIManager', () => {
         <option value="sine">Sine</option>
         <option value="square">Square</option>
         <option value="triangle">Triangle</option>
+        <option value="ramp">Ramp</option>
+        <option value="ramp-down">Ramp Down</option>
+        <option value="exponential">Exponential</option>
+        <option value="exponential-down">Exponential Down</option>
+        <option value="noise">Noise</option>
       `;
       uiManager.initializeElements();
       uiManager.setupWaveformGenerationListeners();
@@ -389,7 +447,7 @@ describe('UIManager', () => {
 
       elements.generateWaveformBtn.click();
 
-      expect(alertSpy).toHaveBeenCalledWith('Duty Cycle must be between 0 and 100 for Square waves.');
+      expect(alertSpy).toHaveBeenCalledWith('Duty Cycle must be between 0 and 100 for Square, Triangle, Ramp, and Exponential waves.');
       expect(mockDrawFunction).not.toHaveBeenCalled();
       alertSpy.mockRestore();
     });
@@ -401,6 +459,82 @@ describe('UIManager', () => {
       elements.amplitudeInput.value = '0.5';
       elements.minValueInput.value = '-0.5';
       elements.cyclesInput.value = '1';
+
+      elements.generateWaveformBtn.click();
+
+      expect(alertSpy).not.toHaveBeenCalled();
+      expect(mockDrawFunction).toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it('should generate noise waveform when noise type is selected', () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      // Set values for noise waveform (no cycles or dutyCycle needed)
+      elements.waveformTypeSelect.value = 'noise';
+      elements.amplitudeInput.value = '0.8';
+      elements.minValueInput.value = '-0.8';
+      // Noise doesn't use cycles, but we still need a valid value
+      elements.cyclesInput.value = '1';
+
+      elements.generateWaveformBtn.click();
+
+      expect(alertSpy).not.toHaveBeenCalled();
+      expect(mockDrawFunction).toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it('should generate ramp-up waveform when selected', () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      elements.waveformTypeSelect.value = 'ramp';
+      elements.amplitudeInput.value = '0.8';
+      elements.minValueInput.value = '-0.8';
+      elements.cyclesInput.value = '2';
+      elements.dutyCycleInput.value = '50';
+
+      elements.generateWaveformBtn.click();
+
+      expect(alertSpy).not.toHaveBeenCalled();
+      expect(mockDrawFunction).toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it('should generate ramp-down waveform when selected', () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      elements.waveformTypeSelect.value = 'ramp-down';
+      elements.amplitudeInput.value = '0.8';
+      elements.minValueInput.value = '-0.8';
+      elements.cyclesInput.value = '2';
+      elements.dutyCycleInput.value = '50';
+
+      elements.generateWaveformBtn.click();
+
+      expect(alertSpy).not.toHaveBeenCalled();
+      expect(mockDrawFunction).toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it('should generate exponential-up waveform when selected', () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      elements.waveformTypeSelect.value = 'exponential';
+      elements.amplitudeInput.value = '0.8';
+      elements.minValueInput.value = '-0.8';
+      elements.cyclesInput.value = '2';
+      elements.dutyCycleInput.value = '50';
+
+      elements.generateWaveformBtn.click();
+
+      expect(alertSpy).not.toHaveBeenCalled();
+      expect(mockDrawFunction).toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it('should generate exponential-down waveform when selected', () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      elements.waveformTypeSelect.value = 'exponential-down';
+      elements.amplitudeInput.value = '0.8';
+      elements.minValueInput.value = '-0.8';
+      elements.cyclesInput.value = '2';
+      elements.dutyCycleInput.value = '50';
 
       elements.generateWaveformBtn.click();
 
@@ -495,6 +629,38 @@ describe('UIManager', () => {
       callbacks.updateState({ waveformData: testData });
 
       expect(state.waveformData).toEqual(testData);
+    });
+  });
+
+  describe('Other UI interactions', () => {
+    beforeEach(() => {
+      uiManager.initializeElements();
+    });
+
+    it('should show alert when download to device is clicked', () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      uiManager.setupDeviceDownloadListener();
+      elements.downloadDeviceBtn.click();
+      expect(alertSpy).toHaveBeenCalledWith('Downloading to device is not yet implemented.');
+      alertSpy.mockRestore();
+    });
+
+    it('should destroy listeners and handlers', () => {
+      const removeListenerSpy = vi.spyOn(window, 'removeEventListener');
+      const mouseHandlerDestroySpy = vi.spyOn(mockMouseHandler, 'destroy');
+      uiManager.destroy();
+      expect(removeListenerSpy).toHaveBeenCalledWith('resize', mockDrawFunction);
+      expect(mouseHandlerDestroySpy).toHaveBeenCalled();
+    });
+
+    it('should fallback to freehand mode if no edit mode is checked', () => {
+      // Uncheck all radio buttons
+      const radios = document.querySelectorAll('input[name="edit-mode"]');
+      radios.forEach(r => {
+        r.checked = false;
+      });
+      uiManager.initializeEditMode();
+      expect(state.editMode).toBe('freehand');
     });
   });
 });

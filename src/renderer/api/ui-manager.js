@@ -1,4 +1,4 @@
-import { generateSineWave, generateSquareWave, generateTriangleWave } from './waveform-generator.js';
+import { generateSineWave, generateSquareWave, generateTriangleWave, generateRampWave, generateExponentialWave, generateNoise } from './waveform-generator.js';
 import { WAVEFORM_POINTS, TOP_PADDING, BOTTOM_PADDING } from './state.js';
 
 export class UIManager {
@@ -288,21 +288,36 @@ export class UIManager {
         alert('Cycles must be a positive integer.');
         return;
       }
-      if (type === 'square' && (isNaN(dutyCycle) || dutyCycle < 0 || dutyCycle > 100)) {
-        alert('Duty Cycle must be between 0 and 100 for Square waves.');
+      if ((type === 'square' || type === 'triangle' || type === 'ramp' || type === 'ramp-down' || type === 'exponential' || type === 'exponential-down') && (isNaN(dutyCycle) || dutyCycle < 0 || dutyCycle > 100)) {
+        alert('Duty Cycle must be between 0 and 100 for Square, Triangle, Ramp, and Exponential waves.');
         return;
       }
 
       let newWaveformData;
       switch (type) {
         case 'sine':
-          newWaveformData = generateSineWave(min, max, cycles, WAVEFORM_POINTS);
+          newWaveformData = generateSineWave(min, max, cycles);
           break;
         case 'square':
-          newWaveformData = generateSquareWave(min, max, cycles, dutyCycle, WAVEFORM_POINTS);
+          newWaveformData = generateSquareWave(min, max, cycles, dutyCycle);
           break;
         case 'triangle':
-          newWaveformData = generateTriangleWave(min, max, cycles, WAVEFORM_POINTS);
+          newWaveformData = generateTriangleWave(min, max, cycles, dutyCycle);
+          break;
+        case 'ramp':
+          newWaveformData = generateRampWave(min, max, cycles, 'up', dutyCycle);
+          break;
+        case 'ramp-down':
+          newWaveformData = generateRampWave(min, max, cycles, 'down', dutyCycle);
+          break;
+        case 'exponential':
+          newWaveformData = generateExponentialWave(min, max, cycles, 'up', dutyCycle);
+          break;
+        case 'exponential-down':
+          newWaveformData = generateExponentialWave(min, max, cycles, 'down', dutyCycle);
+          break;
+        case 'noise':
+          newWaveformData = generateNoise(min, max);
           break;
         default:
           return;
@@ -330,6 +345,13 @@ export class UIManager {
   setupCanvas() {
     window.addEventListener('resize', this.draw);
     this.draw();
+  }
+
+  destroy() {
+    window.removeEventListener('resize', this.draw);
+    if (this.mouseHandler) {
+      this.mouseHandler.destroy();
+    }
   }
 
   initializeEditMode() {
