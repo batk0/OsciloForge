@@ -108,4 +108,49 @@ describe('CanvasDrawer', () => {
     };
     expect(() => drawer.draw(state)).not.toThrow();
   });
+
+  it('should draw dots when drawStyle is "dots"', () => {
+    const state = {
+      waveformData: new Float32Array(WAVEFORM_POINTS).fill(0.5),
+      hZoom: 1,
+      vZoom: 1,
+      viewOffset: 0,
+      vShift: 0,
+      drawStyle: 'dots'
+    };
+    const fillRectSpy = vi.spyOn(drawer.ctx, 'fillRect');
+    drawer.draw(state);
+    expect(fillRectSpy).toHaveBeenCalled();
+
+    // Test with an offset to ensure the x bounds check is hit
+    state.viewOffset = WAVEFORM_POINTS - 10;
+    drawer.draw(state);
+    expect(fillRectSpy).toHaveBeenCalled();
+
+    // Test with a zoom level that makes some points outside the view
+    state.hZoom = 2;
+    state.viewOffset = 10;
+    drawer.draw(state);
+    expect(fillRectSpy).toHaveBeenCalled();
+  });
+
+  describe('Error Handling', () => {
+    it('should throw an error if 2D context is not available', () => {
+      vi.spyOn(canvas, 'getContext').mockReturnValue(null);
+      expect(() => new CanvasDrawer(canvas)).toThrow('2D context not available');
+    });
+
+    it('should not throw in draw method if context is missing', () => {
+      const state = {
+        waveformData: new Float32Array(WAVEFORM_POINTS).fill(0), hZoom: 1, vZoom: 1, viewOffset: 0, vShift: 0, drawStyle: 'line'
+      };
+      drawer.ctx = null; // Manually set context to null
+      expect(() => drawer.draw(state)).not.toThrow();
+    });
+
+    it('should not throw in drawAxesAndGrid method if context is missing', () => {
+      drawer.ctx = null; // Manually set context to null
+      expect(() => drawer.drawAxesAndGrid(500, 300, 1, 1, 0, 0)).not.toThrow();
+    });
+  });
 });

@@ -161,7 +161,7 @@ describe('Waveform Generator', () => {
       expect(result[WAVEFORM_POINTS / 4 + 1]).toBeLessThan(max);
     });
 
-    it('should support duty cycle > 50% (asymmetric with longer fall)', () => {
+    it('should support duty cycle > 50% (asymmetric with longer rise)', () => {
       const min = -1.0;
       const max = 1.0;
       const cycles = 1;
