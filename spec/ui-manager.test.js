@@ -151,6 +151,37 @@ describe('UIManager', () => {
     });
   });
 
+  describe('edit mode controls', () => {
+    beforeEach(() => {
+      uiManager.initializeElements();
+      uiManager.setupEditModeListeners();
+    });
+
+    it('should set edit mode to freehand when freehand button is clicked', () => {
+      // First switch to line mode
+      updateState({ editMode: 'line' });
+      uiManager.editModeLine.classList.add('active');
+      uiManager.editModeFreehand.classList.remove('active');
+
+      // Now click freehand button
+      uiManager.editModeFreehand.click();
+
+      expect(state.editMode).toBe('freehand');
+      expect(uiManager.editModeFreehand.classList.contains('active')).toBe(true);
+      expect(uiManager.editModeLine.classList.contains('active')).toBe(false);
+      expect(mockMouseHandler.setEditMode).toHaveBeenCalledWith('freehand');
+    });
+
+    it('should set edit mode to line when line button is clicked', () => {
+      uiManager.editModeLine.click();
+
+      expect(state.editMode).toBe('line');
+      expect(uiManager.editModeLine.classList.contains('active')).toBe(true);
+      expect(uiManager.editModeFreehand.classList.contains('active')).toBe(false);
+      expect(mockMouseHandler.setEditMode).toHaveBeenCalledWith('line');
+    });
+  });
+
   describe('shift controls', () => {
     beforeEach(() => {
       uiManager.initializeElements();
@@ -301,6 +332,28 @@ describe('UIManager', () => {
 
       expect(state.drawStyle).toBe('dots');
       expect(mockDrawFunction).toHaveBeenCalled();
+    });
+  });
+
+  describe('initializeDrawStyle', () => {
+    beforeEach(() => {
+      uiManager.initializeElements();
+    });
+
+    it('should initialize line draw style when state is line', () => {
+      updateState({ drawStyle: 'line' });
+      uiManager.initializeDrawStyle();
+
+      expect(uiManager.drawStyleLine.classList.contains('active')).toBe(true);
+      expect(uiManager.drawStyleDots.classList.contains('active')).toBe(false);
+    });
+
+    it('should initialize dots draw style when state is dots', () => {
+      updateState({ drawStyle: 'dots' });
+      uiManager.initializeDrawStyle();
+
+      expect(uiManager.drawStyleDots.classList.contains('active')).toBe(true);
+      expect(uiManager.drawStyleLine.classList.contains('active')).toBe(false);
     });
   });
 
