@@ -1,6 +1,8 @@
 import { generateSineWave, generateSquareWave, generateTriangleWave, generateRampWave, generateExponentialWave, generateNoise } from './waveform-generator.js';
 import { WAVEFORM_POINTS, TOP_PADDING, BOTTOM_PADDING } from './state.js';
 
+const WAVEFORM_TYPES_WITH_DUTY_CYCLE = ['square', 'triangle', 'ramp', 'ramp-down', 'exponential', 'exponential-down'];
+
 export class UIManager {
   constructor(state, updateState, canvasDrawer, mouseHandler, drawFunction) {
     this.state = state;
@@ -308,7 +310,7 @@ export class UIManager {
         alert('Cycles must be a positive integer.');
         return;
       }
-      if ((type === 'square' || type === 'triangle' || type === 'ramp' || type === 'ramp-down' || type === 'exponential' || type === 'exponential-down') && (isNaN(dutyCycle) || dutyCycle < 0 || dutyCycle > 100)) {
+      if (WAVEFORM_TYPES_WITH_DUTY_CYCLE.includes(type) && (isNaN(dutyCycle) || dutyCycle < 0 || dutyCycle > 100)) {
         alert('Duty Cycle must be between 0 and 100 for Square, Triangle, Ramp, and Exponential waves.');
         return;
       }
@@ -340,6 +342,7 @@ export class UIManager {
           newWaveformData = generateNoise(min, max);
           break;
         default:
+          console.warn('Unknown waveform type: ' + type);
           return;
       }
       const updatedWaveformData = new Float32Array(this.state.waveformData);

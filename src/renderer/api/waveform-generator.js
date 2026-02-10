@@ -174,6 +174,13 @@ export function generateExponentialWave(min, max, cycles, direction, dutyCycle) 
 }
 
 export function generateNoise(min, max) {
+  // Handle edge case: min > max - swap values to ensure valid range
+  if (min > max) {
+    const temp = min;
+    min = max;
+    max = temp;
+  }
+
   const data = new Float32Array(WAVEFORM_POINTS);
 
   for (let i = 0; i < WAVEFORM_POINTS; i++) {
