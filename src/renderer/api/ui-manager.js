@@ -222,41 +222,49 @@ export class UIManager {
     }
 
     this.openBtn.addEventListener('click', async () => {
-      const fileContent = await window.electronAPI.openFile();
-      if (fileContent !== undefined && fileContent !== null) {
-        const lines = fileContent.split('\n').filter(line => line.trim() !== '');
-        if (lines.length > 0) {
-          const numericData = lines.map(line => parseFloat(line.trim()));
+      try {
+        const fileContent = await window.electronAPI.openFile();
+        if (fileContent !== undefined && fileContent !== null) {
+          const lines = fileContent.split('\n').filter(line => line.trim() !== '');
+          if (lines.length > 0) {
+            const numericData = lines.map(line => parseFloat(line.trim()));
 
-          if (numericData.some(isNaN)) {
-            alert('Error: File contains non-numeric values.');
-            return;
+            if (numericData.some(isNaN)) {
+              alert('Error: File contains non-numeric values.');
+              return;
+            }
+
+            const finalData = new Float32Array(WAVEFORM_POINTS);
+
+            const clampedData = numericData.slice(0, WAVEFORM_POINTS).map(val => Math.max(-1.0, Math.min(1.0, val)));
+            finalData.set(clampedData);
+
+            // Reset zoom and pan on new file
+            this.hZoomSlider.value = 1;
+            this.vZoomSlider.value = 1;
+            this.updateState({
+              waveformData: finalData,
+              lastLoadedWaveformData: new Float32Array(finalData),
+              hZoom: 1,
+              vZoom: 1,
+              viewOffset: 0
+            });
+
+            this.draw();
           }
-
-          const finalData = new Float32Array(WAVEFORM_POINTS);
-
-          const clampedData = numericData.slice(0, WAVEFORM_POINTS).map(val => Math.max(-1.0, Math.min(1.0, val)));
-          finalData.set(clampedData);
-
-          // Reset zoom and pan on new file
-          this.hZoomSlider.value = 1;
-          this.vZoomSlider.value = 1;
-          this.updateState({
-            waveformData: finalData,
-            lastLoadedWaveformData: new Float32Array(finalData),
-            hZoom: 1,
-            vZoom: 1,
-            viewOffset: 0
-          });
-
-          this.draw();
         }
+      } catch (error) {
+        alert('Error opening file: ' + error.message);
       }
     });
 
     this.saveBtn.addEventListener('click', async () => {
-      const dataString = Array.from(this.state.waveformData).join('\n');
-      await window.electronAPI.saveFile(dataString);
+      try {
+        const dataString = Array.from(this.state.waveformData).join('\n');
+        await window.electronAPI.saveFile(dataString);
+      } catch (error) {
+        alert('Error saving file: ' + error.message);
+      }
     });
 
     this.resetBtn.addEventListener('click', () => {
