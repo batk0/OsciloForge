@@ -180,6 +180,25 @@ describe('UIManager', () => {
       expect(uiManager.editModeFreehand.classList.contains('active')).toBe(false);
       expect(mockMouseHandler.setEditMode).toHaveBeenCalledWith('line');
     });
+
+    it('should return early from setupEditModeListeners when edit mode buttons are null', () => {
+      // Create a new UIManager instance
+      const testUiManager = new UIManager(
+        state,
+        updateState,
+        mockCanvasDrawer,
+        mockMouseHandler,
+        mockDrawFunction
+      );
+
+      // Initialize elements but remove edit mode buttons
+      testUiManager.initializeElements();
+      testUiManager.editModeFreehand = null;
+      testUiManager.editModeLine = null;
+
+      // Should not throw error
+      expect(() => testUiManager.setupEditModeListeners()).not.toThrow();
+    });
   });
 
   describe('shift controls', () => {
@@ -251,6 +270,25 @@ describe('UIManager', () => {
 
       expect(state.vZoom).toBe(newZoom);
       expect(mockDrawFunction).toHaveBeenCalled();
+    });
+
+    it('should return early from vZoomSlider handler when canvas is null', () => {
+      // Set canvas to null to trigger early return
+      uiManager.canvas = null;
+
+      // Store initial state
+      const initialVZoom = state.vZoom;
+      const initialVShift = state.vShift;
+
+      // Trigger vZoomSlider input event
+      elements.vZoomSlider.value = '2.0';
+      elements.vZoomSlider.dispatchEvent(new Event('input'));
+
+      // State should not change due to early return
+      expect(state.vZoom).toBe(initialVZoom);
+      expect(state.vShift).toBe(initialVShift);
+      // draw should not be called
+      expect(mockDrawFunction).not.toHaveBeenCalled();
     });
   });
 
@@ -406,6 +444,34 @@ describe('UIManager', () => {
       expect(state.waveformData[1]).toBeCloseTo(0.2, 5);
       expect(state.waveformData[2]).toBeCloseTo(0.3, 5);
       expect(mockDrawFunction).toHaveBeenCalled();
+    });
+
+    it('should alert when openFile throws an error', async () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      const errorMessage = 'Permission denied';
+      window.electronAPI.openFile.mockRejectedValue(new Error(errorMessage));
+
+      elements.openBtn.click();
+
+      // Wait for the async open to complete
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(alertSpy).toHaveBeenCalledWith('Error opening file: ' + errorMessage);
+      alertSpy.mockRestore();
+    });
+
+    it('should alert when saveFile throws an error', async () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      const errorMessage = 'Disk full';
+      window.electronAPI.saveFile.mockRejectedValue(new Error(errorMessage));
+
+      elements.saveBtn.click();
+
+      // Wait for the async save to complete
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(alertSpy).toHaveBeenCalledWith('Error saving file: ' + errorMessage);
+      alertSpy.mockRestore();
     });
   });
 
@@ -693,7 +759,7 @@ describe('UIManager', () => {
       expect(mouseHandlerDestroySpy).toHaveBeenCalled();
     });
 
-    it('should fallback to freehand mode if state is invalid', () => {
+    it('should fallback to line mode if state is invalid', () => {
       // Set invalid edit mode
       updateState({ editMode: 'invalid' });
       uiManager.initializeEditMode();
