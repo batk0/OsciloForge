@@ -610,7 +610,7 @@ describe('MouseHandler', () => {
     const V_CENTER = CHART_HEIGHT / 2;
     const V_SCALE = CHART_HEIGHT / 2;
 
-    // Helper function to normalize canvas Y to waveform value (accounting for vZoom)
+    // Helper function to normalize canvas Y to waveform value
     function normalizeCanvasY(canvasY, vZoom = 1, vShift = 0) {
       const vCenter = V_CENTER + vShift;
       const vScale = V_SCALE * vZoom;
@@ -1334,26 +1334,6 @@ describe('MouseHandler', () => {
   describe('State Management Tests', () => {
     const CANVAS_HEIGHT = 400;
     const CANVAS_WIDTH = 800;
-    const CHART_HEIGHT = CANVAS_HEIGHT - (TOP_PADDING + BOTTOM_PADDING);
-    const V_CENTER = CHART_HEIGHT / 2;
-    const V_SCALE = CHART_HEIGHT / 2;
-
-    // Helper function to normalize canvas Y to waveform value
-    function normalizeCanvasY(canvasY, vZoom = 1, vShift = 0) {
-      const vCenter = V_CENTER + vShift;
-      const vScale = V_SCALE * vZoom;
-      return (vCenter - (canvasY - TOP_PADDING)) / vScale;
-    }
-
-    // Helper function to calculate data index from canvas X
-    function canvasXToDataIndex(canvasX, hZoom = 1, viewOffset = 0) {
-      const chartWidth = CANVAS_WIDTH - (LEFT_PADDING + RIGHT_PADDING);
-      const visiblePoints = WAVEFORM_POINTS / hZoom;
-      const localXScale = chartWidth / visiblePoints;
-      const dataIndexFloat =
-        (canvasX - LEFT_PADDING) / localXScale + viewOffset;
-      return Math.floor(dataIndexFloat);
-    }
 
     beforeEach(() => {
       canvas.width = CANVAS_WIDTH;
@@ -1401,8 +1381,6 @@ describe('MouseHandler', () => {
       const event2 = new dom.window.MouseEvent('mousedown', { button: 0 });
       handler.handleMouseDown(event2);
 
-      const updateArg1 = hooks.updateState.mock.calls[0][0];
-      const newStartPoint1 = updateArg1.lineStartPoint;
       hooks.updateState.mockClear();
 
       // Third line segment

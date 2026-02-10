@@ -656,7 +656,9 @@ describe('UIManager', () => {
     it('should fallback to freehand mode if no edit mode is checked', () => {
       // Uncheck all radio buttons
       const radios = document.querySelectorAll('input[name="edit-mode"]');
-      radios.forEach(r => { r.checked = false; });
+      radios.forEach(r => {
+        r.checked = false;
+      });
       uiManager.initializeEditMode();
       expect(state.editMode).toBe('freehand');
     });
