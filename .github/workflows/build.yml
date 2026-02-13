@@ -35,7 +35,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build and Release
+      - name: Build and Release (Main/Tag)
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build -- --publish always
+
+      - name: Build (PR)
+        if: github.event_name == 'pull_request'
+        run: npm run build
