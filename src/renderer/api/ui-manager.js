@@ -342,7 +342,6 @@ export class UIManager {
           newWaveformData = generateNoise(min, max);
           break;
         default:
-          console.warn('Unknown waveform type: ' + type);
           return;
       }
       const updatedWaveformData = new Float32Array(this.state.waveformData);
