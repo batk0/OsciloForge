@@ -55,7 +55,7 @@
     }
   },
   "keywords": [],
-  "author": "",
+  "author": "Anton Kaiukov <batkowm@gmail.com>",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
