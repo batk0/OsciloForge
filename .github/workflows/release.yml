@@ -28,7 +28,10 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev build-essential
+          npm ci
 
       - name: Run tests
         run: npm test -- --run
