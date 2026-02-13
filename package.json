@@ -8,72 +8,18 @@
     "start": "electron .",
     "test": "vitest",
     "lint": "eslint src/ spec/",
-    "lint:fix": "eslint src/ spec/ --fix",
-    "build": "electron-builder",
-    "postinstall": "electron-builder install-app-deps",
-    "release": "semantic-release"
-  },
-  "build": {
-    "appId": "com.oscilloforge.app",
-    "productName": "OscilloForge",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "**/*",
-      "!dist/**",
-      "!spec/**",
-      "!coverage/**",
-      "!docs/**",
-      "!.github/**",
-      "!eslint.config.mjs",
-      "!vitest.config.js"
-    ],
-    "mac": {
-      "target": [
-        "dmg",
-        "zip"
-      ],
-      "category": "public.app-category.utilities",
-      "identity": null
-    },
-    "win": {
-      "target": [
-        "portable"
-      ]
-    },
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb",
-        "rpm"
-      ],
-      "category": "Utility"
-    },
-    "publish": {
-      "provider": "github"
-    }
+    "lint:fix": "eslint src/ spec/ --fix"
   },
   "keywords": [],
-  "author": "Anton Kaiukov <batkowm@gmail.com>",
+  "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@semantic-release/changelog": "^6.0.0",
-    "@semantic-release/commit-analyzer": "^11.0.0",
-    "@semantic-release/git": "^10.0.0",
-    "@semantic-release/github": "^9.0.0",
-    "@semantic-release/release-notes-generator": "^12.0.0",
-    "@vitest/coverage-v8": "^4.0.18",
-    "conventional-changelog-conventionalcommits": "^7.0.0",
-    "electron": "^40.4.0",
-    "electron-builder": "^26.7.0",
-    "eslint": "^10.0.0",
-    "globals": "^17.3.0",
-    "jsdom": "^28.0.0",
-    "semantic-release": "^23.0.0",
-    "vitest": "^4.0.18"
+    "@vitest/coverage-v8": "^4.0.17",
+    "electron": "^39.2.7",
+    "eslint": "^8.57.1",
+    "jsdom": "^27.4.0",
+    "vitest": "^4.0.17"
   },
   "dependencies": {
     "canvas": "^3.2.1"

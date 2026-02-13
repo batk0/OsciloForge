@@ -13,31 +13,6 @@ const sharedSourceRules = {
 };
 
 export default [
-  {
-    ignores: [
-      'node_modules/**',
-      'package-lock.json',
-      'dist/**',
-      'build/**',
-      'out/**',
-      '.git/**',
-      '.gitignore',
-      '.vscode/**',
-      '.idea/**',
-      '.DS_Store',
-      '*.swp',
-      '*.swo',
-      '*~',
-      'coverage/**',
-      '.nyc_output/**',
-      'tmp/**',
-      'temp/**',
-      'Thumbs.db',
-      'docs/**',
-      '.github/**',
-      '.gitlab-ci.yml'
-    ]
-  },
   js.configs.recommended,
 
   // Base configuration for all JS files with custom rules
