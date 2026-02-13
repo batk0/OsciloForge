@@ -1,27 +1,18 @@
-name: Manual Release
+name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      release_type:
-        description: 'Release type (auto-detected from commits by default)'
-        required: false
-        default: 'auto'
-        type: choice
-        options:
-          - auto
-          - patch
-          - minor
-          - major
+  push:
+    branches: [main]
 
 permissions:
   contents: write
-  id-token: write
+  pull-requests: write
 
 jobs:
   release:
-    name: Create Release
+    name: Release
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
       - name: Checkout code
@@ -30,11 +21,6 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev build-essential
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -42,7 +28,10 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev build-essential
+          npm ci
 
       - name: Run tests
         run: npm test -- --run
@@ -50,7 +39,7 @@ jobs:
       - name: Run linter
         run: npm run lint
 
-      - name: Create Release
+      - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx semantic-release
