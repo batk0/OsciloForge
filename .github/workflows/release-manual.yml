@@ -50,8 +50,16 @@ jobs:
       - name: Get latest build run ID
         id: get_run_id
         run: |
-          run_id=$(gh run list --workflow=build.yml --branch=main --status=success --limit 1 --json databaseId --jq '.[0].databaseId')
-          echo "run_id=$run_id" >> $GITHUB_OUTPUT
+          run_id=$(gh run list --workflow=build.yml \
+            --branch="${{ github.ref_name }}" \
+            --status=success --limit 20 \
+            --json databaseId,headSha \
+            --jq 'map(select(.headSha=="${{ github.sha }}"))[0].databaseId')
+          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
+            echo "No successful build.yml run found for ${{ github.sha }} on ${{ github.ref_name }}" >&2
+            exit 1
+          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ github.token }}
 
