@@ -16,13 +16,16 @@ on:
 
 permissions:
   contents: write
-  id-token: write
+  actions: read
 
 jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: write
+      actions: read
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,6 +47,46 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Get latest build run ID
+        id: get_run_id
+        run: |
+          run_id=$(gh run list --workflow=build.yml \
+            --branch="${{ github.ref_name }}" \
+            --status=success --limit 20 \
+            --json databaseId,headSha \
+            --jq 'map(select(.headSha=="${{ github.sha }}"))[0].databaseId')
+          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
+            echo "No successful build.yml run found for ${{ github.sha }} on ${{ github.ref_name }}" >&2
+            exit 1
+          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.get_run_id.outputs.run_id }}
+          name: dist-macos-latest
+          path: dist/macos
+
+      - name: Download Ubuntu artifacts
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.get_run_id.outputs.run_id }}
+          name: dist-ubuntu-latest
+          path: dist/ubuntu
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.get_run_id.outputs.run_id }}
+          name: dist-windows-latest
+          path: dist/windows
+
       - name: Run tests
         run: npm test -- --run
 
@@ -52,5 +95,5 @@ jobs:
 
       - name: Create Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: npx semantic-release

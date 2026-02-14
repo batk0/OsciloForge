@@ -36,7 +36,12 @@
       "@semantic-release/github",
       {
         "successComment": false,
-        "failComment": false
+        "failComment": false,
+        "assets": [
+          "dist/macos/**",
+          "dist/ubuntu/**",
+          "dist/windows/**"
+        ]
       }
     ],
     [

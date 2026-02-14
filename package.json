@@ -35,12 +35,14 @@
         "zip"
       ],
       "category": "public.app-category.utilities",
-      "identity": null
+      "identity": null,
+      "icon": "logo.png"
     },
     "win": {
       "target": [
         "portable"
-      ]
+      ],
+      "icon": "logo.png"
     },
     "linux": {
       "target": [
@@ -48,7 +50,8 @@
         "deb",
         "rpm"
       ],
-      "category": "Utility"
+      "category": "Utility",
+      "icon": "logo.png"
     },
     "publish": {
       "provider": "github"
