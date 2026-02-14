@@ -9,7 +9,7 @@
     "test": "vitest",
     "lint": "eslint src/ spec/",
     "lint:fix": "eslint src/ spec/ --fix",
-    "build": "electron-builder",
+    "build": "electron-builder --publish never",
     "postinstall": "electron-builder install-app-deps",
     "release": "semantic-release"
   },
