@@ -52,6 +52,6 @@ jobs:
             dist/*.AppImage
             dist/*.deb
             dist/*.rpm
-            dist/*.yml
+            dist/latest*.yml
             dist/*.blockmap
           retention-days: 7
