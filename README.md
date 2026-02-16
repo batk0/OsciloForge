@@ -18,7 +18,7 @@ The application features a responsive UI that adapts to the window size and a da
 ## Features
 
 -   **File Operations:** Open and save waveform data in both CSV and the proprietary ARB format.
--   **Waveform Generation:** Generate standard **Sine**, **Square**, and **Triangle** waves with adjustable amplitude, cycles, and duty cycle.
+-   **Waveform Generation:** Generate standard **Sine**, **Square**, **Triangle** waves **Noise** and **Linear** and **Exponential** ramps 
 -   **Interactive Editing:**
     -   **Freehand Drawing:** Click and drag to draw the waveform.
     -   **Line Drawing:** Click to set points and draw connected straight lines.
