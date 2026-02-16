@@ -45,6 +45,9 @@ button {
   border-radius: 4px;
   cursor: pointer;
 }
+button[id^=draw-style] {
+  color: #f00;
+}
 
 select,
 input[type="number"] {
