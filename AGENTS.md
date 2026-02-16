@@ -95,7 +95,7 @@ if (value < 0) {
 
 ### UI & Theme
 - **Dark Mode**: Background `#333`, Toolbar `#4f4f4f`.
-- **Text**: Primary `#f0f0f0`, Secondary `#ccc`.
+- **Text**: Primary `#f0f0f0`. No dedicated secondary color; reuse primary.
 - **Waveform**: `#ff0000` (Red) for high contrast.
 
 ## Workflow Guidelines
