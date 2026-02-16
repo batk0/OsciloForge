@@ -25,30 +25,31 @@ The application features a responsive UI that adapts to the window size and a da
 -   **Advanced Navigation:**
     -   Independent horizontal and vertical zoom.
     -   Fluid panning in all directions.
-    -   **Mouse Controls:** Use `Shift + Drag` to pan and `Cmd/Ctrl + Drag` to perform a direction-locked zoom.
 -   **Dynamic Grid:** An oscilloscope-style grid that dynamically adjusts its density as you zoom, providing a clear and constant visual reference.
 
-## Getting Started
+## Supported Formats
 
-### Prerequisites
+OscilloForge supports importing and exporting waveform data in the following formats:
 
--   [Node.js](https://nodejs.org/) and npm must be installed on your system.
+-   **CSV (.csv)**: Comma-Separated Values. The file should contain one floating-point value per line. Values are normalized between -1.0 and 1.0.
+-   **ARB (.arb)**: A proprietary binary format used by **Hantek** hardware. It consists of a standard header followed by 16-bit signed integer data.
 
-### Installation
+## Usage
 
-1.  Clone the repository or download the source code.
-2.  Navigate to the project directory and install the dependencies:
-    ```bash
-    npm install
-    ```
+### Navigation
+-   **Pan**: Hold `Shift` and click-drag to move the waveform view.
+-   **Zoom**: Hold `Cmd` (Mac) or `Ctrl` (Windows/Linux) and click-drag.
+    -   Drag **horizontally** to zoom in/out on the time axis.
+    -   Drag **vertically** to zoom in/out on the amplitude axis.
 
-### Running the Application
+### Editing
+-   **Freehand Mode**: Click and drag on the canvas to draw the waveform freely.
+-   **Line Mode**: Click to set a point, then click elsewhere to draw a straight line connecting them. Continue clicking to create a multi-segment line. Right-click to complete the contiguous line segment.
 
-To start OscilloForge in development mode, run the following command:
-
-```bash
-npm start
-```
+### Waveform Generation
+Use the toolbar to generate standard waveforms:
+-   **Sine, Square, Triangle, Ramp (up/down), Exponential (up/down), Noise**: Select the type and adjust Max/Min, Cycles, and Duty (except noise)
+-   **Generate**: Click to replace the current waveform with the generated one.
 
 ## License
 
