@@ -35,8 +35,6 @@ jobs:
 
       - name: Get next version
         id: get_version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=$(node .github/scripts/get-version.js)
           if [ -n "$VERSION" ]; then
