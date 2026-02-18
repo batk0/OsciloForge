@@ -20,6 +20,7 @@ async function run() {
 
       result = await semanticRelease({
         dryRun: true,
+        ci: false,
         branches: ['main'],
         plugins: [
           '@semantic-release/commit-analyzer',
