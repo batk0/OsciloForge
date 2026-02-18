@@ -35,8 +35,9 @@
         "zip"
       ],
       "category": "public.app-category.utilities",
-      "identity": null,
-      "icon": "logo.png"
+      "icon": "logo.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
     },
     "win": {
       "target": [
