@@ -31,13 +31,19 @@
     ],
     "mac": {
       "target": [
-        "dmg",
-        "zip"
+        {
+          "target": "dmg",
+          "arch": ["universal"]
+        }, {
+          "target": "zip",
+          "arch": ["universal"]
+        }
       ],
       "category": "public.app-category.utilities",
       "icon": "logo.png",
       "hardenedRuntime": true,
-      "gatekeeperAssess": false
+      "gatekeeperAssess": false,
+      "minimumSystemVersion": "14.0"
     },
     "win": {
       "target": [
